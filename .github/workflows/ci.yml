@@ -24,7 +24,6 @@ jobs:
           path: dist/*.deb
   pasang:
     runs-on: ubuntu-24.04
-    continue-on-error: true   # dihapus A di A6 setelah B1 mendarat
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq bats shellcheck man-db groff-base
