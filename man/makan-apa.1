@@ -1,0 +1,100 @@
+.TH MAKAN-APA 1 "2026-10-20" "makan-apa 0.1.0" "Perintah pengguna"
+.SH NAME
+makan-apa \- pemilih tempat makan dengan riwayat dan filter
+.SH SYNOPSIS
+.B makan\-apa
+.I perintah
+.RI [ opsi ]
+.SH DESCRIPTION
+.B makan\-apa
+memilih satu tempat makan secara acak dari daftar TSV milik pengguna.
+Tempat yang sudah dipilih dalam beberapa hari terakhir tidak dipilih lagi.
+Data disimpan di direktori XDG pengguna dan boleh disunting dengan editor teks.
+.SH COMMANDS
+.TP
+.B init
+menyalin data contoh ke direktori data.
+.TP
+.B tambah
+menambah satu tempat beserta harga, tag, dan catatan.
+.TP
+.B daftar
+menampilkan daftar tempat sebagai tabel atau TSV.
+.TP
+.B ubah
+mengubah sebagian kolom sebuah tempat.
+.TP
+.B hapus
+menghapus sebuah tempat tanpa konfirmasi.
+.TP
+.B pilih
+memilih satu tempat secara acak dengan filter budget dan tag.
+.TP
+.B riwayat
+menampilkan riwayat pilihan.
+.TP
+.B impor
+mengimpor daftar dari berkas TSV.
+.SH OPTIONS
+.TP
+.B \-h, \-\-help
+menampilkan bantuan.
+.TP
+.B \-V, \-\-version
+menampilkan versi.
+.TP
+.B \-\-budget HARGA
+batas harga, misalnya 25000, 25rb, 25k, atau 25.000.
+.TP
+.B \-\-ketat
+membandingkan harga tertinggi dengan budget, bukan harga terendah.
+.TP
+.B \-\-tag T
+hanya tempat yang memiliki salah satu tag tersebut.
+.TP
+.B \-\-hari N
+jendela riwayat dalam hari; 0 mengabaikan riwayat.
+.TP
+.B \-\-dry\-run
+menampilkan pilihan tanpa mencatat ke riwayat.
+.TP
+.B \-\-ulang
+mengganti pilihan terakhir hari ini.
+.TP
+.B \-\-tsv
+mencetak TSV tanpa header.
+.SH FILES
+.TP
+.I ~/.local/share/makan-apa/tempat.tsv
+daftar tempat, lima kolom dipisah tab.
+.TP
+.I ~/.local/share/makan-apa/riwayat.tsv
+riwayat pilihan, tanggal dan nama.
+.TP
+.I ~/.config/makan-apa/config
+konfigurasi, misalnya riwayat_hari=3.
+.SH ENVIRONMENT
+.TP
+.B MAKAN_APA_DATA_DIR
+mengganti direktori data.
+.TP
+.B MAKAN_APA_CONFIG_DIR
+mengganti direktori konfigurasi.
+.TP
+.B MAKAN_APA_TANGGAL
+memalsukan tanggal hari ini, format YYYY-MM-DD.
+.SH "EXIT STATUS"
+0 sukses, 1 pemakaian, 2 tidak ada kandidat, 3 data atau IO,
+4 data terkunci, 5 nama tidak ditemukan.
+.SH EXAMPLES
+.PP
+.nf
+makan\-apa init
+makan\-apa tambah "Nasi Goreng Spesial" \-\-harga 15rb\-25rb \-\-tag nasi
+makan\-apa pilih \-\-budget 20rb \-\-tag nasi,mie
+makan\-apa riwayat \-\-hari 7
+.fi
+.SH BUGS
+Laporkan di https://github.com/Ivanadrian31/MakanApa/issues
+.SH "SEE ALSO"
+.BR bash (1)
