@@ -110,14 +110,13 @@ di A5.
 **P10 — Branch tahap tidak dihapus setelah merge (disetujui pemilik rencana).**
 Dulu langkah 7 alur Git menghapus branch setelah merge. Alasan perubahan: riwayat kerja
 per tahap tetap terlihat di remote sehingga mudah ditelusuri saat review atau bila perlu
-menclair ulang; menghapus branch menghilangkan bukti tanpa-quarter yang tidak selalu ada di
-commit squash. Dampak: (a) `gh pr merge <nomor> --squash` dipakai tanpa
-`--delete-branch`; (b) `git push origin --delete <branch>` dan `git branch -d/-D` dilarang
-untuk branch tahap, satu-satunya pengecualian branch uji `uji-akses` di A0; (c) branch lama
-tidak dipakai ulang, perbaikan susulan memakai branch baru (mis.
-`a-1-kerangka-perbaikan`); (d) sekitar 14 branch menumpuk di remote — tidak mengganggu CI
-karena CI hanya berjalan untuk PR dan push ke `main`; (e) reviewer harus memeriksa bahwa
-branch PR tidak ikut terhapus.
+menelusuri ulang; menghapus branch menghilangkan bukti yang tidak selalu ada di commit squash.
+Dampak: (a) `gh pr merge <nomor> --squash` dipakai tanpa opsi hapus branch; (b)
+`git push origin --delete <branch>` dan `git branch -d/-D` dilarang untuk branch tahap,
+satu-satunya pengecualian branch uji `uji-akses` di A0; (c) branch lama tidak dipakai ulang,
+perbaikan susulan memakai branch baru (mis. `a-1-kerangka-perbaikan`); (d) sekitar 14 branch
+menumpuk di remote — tidak mengganggu CI karena CI hanya berjalan untuk PR dan push ke
+`main`; (e) reviewer harus memeriksa bahwa branch PR tidak ikut terhapus.
 
 ### 2.2 Klarifikasi aditif (menutup celah; wajib disetujui di PR kontrak pertama)
 
@@ -564,7 +563,7 @@ Berlaku untuk kode, tes, dokumen, salah ketik, dan perubahan kontrak.
 6. Merah → perbaiki di branch yang sama, push ulang. Dilarang merge dengan CI merah,
    `--no-verify`, push langsung ke `main`, atau force-push ke `main`.
 7. Setelah merge: **branch tahap TIDAK dihapus** (P10) — `gh pr merge <nomor> --squash`
-   tanpa `--delete-branch`. Lalu `git switch main && git pull --ff-only` dan buat branch
+   tanpa opsi hapus branch. Lalu `git switch main && git pull --ff-only` dan buat branch
    baru dari `main`; branch lama tidak dipakai ulang, dan perbaikan susulan memakai branch
    baru (mis. `a-1-kerangka-perbaikan`). Dilarang `git push origin --delete <branch>` dan
    `git branch -d/-D` untuk branch tahap; satu-satunya pengecualian adalah branch uji
