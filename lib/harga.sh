@@ -24,9 +24,14 @@ parse_harga() {
   HARGA_NILAI=$((10#$angka))
 }
 
-# 25000 -> 25.000 (pisah ribuan).
+# 25000 -> 25.000 (pisah ribuan), 8000 -> 8.000.
 format_angka() {
-  printf '%d' "$1" | sed -e ':a' -e 's/\(.*[0-9]\)\([0-9]\{3\}\)/\1.\2/;ta'
+  local out='' sisa=$1
+  while [ "${#sisa}" -gt 3 ]; do
+    out=".${sisa: -3}${out}"
+    sisa=${sisa:0:${#sisa}-3}
+  done
+  printf '%s%s' "$sisa" "$out"
 }
 
 # $1=min $2=maks -> stdout "Rp15.000-25.000" atau "Rp20.000" bila sama.
