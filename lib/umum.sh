@@ -92,6 +92,19 @@ validasi_nama() { # $1 -> NAMA_BERSIH
   NAMA_BERSIH=$nama
 }
 
+# Gabung daftar tag (dipisah koma) -> stdout: huruf kecil, tervalidasi, kosong bila input kosong.
+gabung_tag() {
+  local sisa=${1-} hasil='' satu
+  [ -n "$sisa" ] || return 0
+  while [ -n "$sisa" ]; do
+    satu=${sisa%%,*}
+    if [ "$satu" = "$sisa" ]; then sisa=; else sisa=${sisa#*,}; fi
+    normalisasi_tag "$satu"
+    hasil="${hasil:+$hasil,}$TAG_BERSIH"
+  done
+  printf '%s' "$hasil"
+}
+
 normalisasi_tag() { # $1 -> TAG_BERSIH (satu tag)
   local tag=${1,,}
   if ! [[ $tag =~ ^[a-z0-9][a-z0-9_-]{0,19}$ ]]; then

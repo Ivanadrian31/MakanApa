@@ -80,35 +80,8 @@ cmd_tambah() {
   printf 'Ditambahkan: %s (%s) [%s]\n' "$nama" "$(format_harga "$min" "$maks")" "$tag"
 }
 
-# Daftar tag dari string dipisah koma -> stdout; kosong bila input kosong.
-gabung_tag() {
-  local sisa=${1-} hasil='' satu
-  [ -n "$sisa" ] || return 0
-  while [ -n "$sisa" ]; do
-    satu=${sisa%%,*}
-    if [ "$satu" = "$sisa" ]; then sisa=; else sisa=${sisa#*,}; fi
-    normalisasi_tag "$satu"
-    hasil="${hasil:+$hasil,}$TAG_BERSIH"
-  done
-  printf '%s' "$hasil"
-}
-
-# --tag OR (kontrak 4.2): 1 bila $1 (tag tempat, dipisah koma) punya salah satu tag
-# dari $2 (tag yang diminta, dipisah koma).
-punya_tag() { # $1=tag tempat $2=tag diminta
-  local punya=$1 minta=$2 satu
-  [ -n "$punya" ] || return 1
-  while [ -n "$minta" ]; do
-    satu=${minta%%,*}
-    if [ "$satu" = "$minta" ]; then minta=; else minta=${minta#*,}; fi
-    case ",$punya," in
-      *",$satu,"*) return 0 ;;
-    esac
-  done
-  return 1
-}
-
 cmd_daftar() {
+  siapkan_budget
   ambil_kunci s
   baca_tempat
   local -a tampil=()
@@ -117,6 +90,14 @@ cmd_daftar() {
     baris=${TEMPAT[i]}
     if [ -n "$OPT_TAG" ] && ! punya_tag "$(kolom_ke "$baris" 4)" "$OPT_TAG"; then
       continue
+    fi
+    if [ -n "$OPT_BUDGET" ]; then
+      local hmin hmax harga
+      hmin=$(kolom_ke "$baris" 2)
+      hmax=$(kolom_ke "$baris" 3)
+      harga=$hmin
+      [ "$OPT_KETAT" = 1 ] && harga=$hmax
+      if [ "$harga" -gt "$BUDGET_ANGKA" ]; then continue; fi
     fi
     tampil+=("$baris")
   done

@@ -46,8 +46,40 @@ nilai_jendela() {
   printf '%s' "$n"
 }
 
-# Penyaringan (kontrak 4.1). A3: hanya riwayat; budget dan tag menyusul di A4.
-# Mengisi KANDIDAT[], KANDIDAT_TOTAL, GAGAL_BUDGET, GAGAL_TAG, GAGAL_RIWAYAT.
+# 1 bila baris punya salah satu tag yang diminta (OR).
+punya_tag() { # $1=tag tempat $2=tag diminta
+  local punya=$1 minta=$2 satu
+  [ -n "$punya" ] || return 1
+  while [ -n "$minta" ]; do
+    satu=${minta%%,*}
+    if [ "$satu" = "$minta" ]; then minta=; else minta=${minta#*,}; fi
+    case ",$punya," in
+      *",$satu,"*) return 0 ;;
+    esac
+  done
+  return 1
+}
+
+# Budget sebagai angka (0 = tidak ada filter). Validasi --budget dan --ketat.
+# $1 = perintah (untuk pesan galat).
+siapkan_budget() {
+  BUDGET_ANGKA=0
+  if [ -z "$OPT_BUDGET" ]; then
+    if [ "$OPT_KETAT" = 1 ]; then
+      die "--ketat membutuhkan --budget." 1
+    fi
+    return 0
+  fi
+  case $OPT_BUDGET in
+    *-*) die "--budget hanya menerima satu nilai." 1 ;;
+  esac
+  parse_harga "$OPT_BUDGET"
+  BUDGET_ANGKA=$HARGA_NILAI
+}
+
+# Penyaringan: budget -> tag -> riwayat (kontrak 4.1).
+# A4: budget dan tag masuk. STATISTIK: GAGAL_BUDGET, GAGAL_TAG, GAGAL_RIWAYAT,
+# KANDIDAT[], KANDIDAT_TOTAL, SARAN_BUDGET.
 saring() {
   KANDIDAT=()
   KANDIDAT_TOTAL=0
@@ -55,19 +87,47 @@ saring() {
   GAGAL_TAG=0
   GAGAL_RIWAYAT=0
   SARAN_BUDGET=
-  local n batas i nama tanggal
-  n=$(nilai_jendela)
+  local batas i nama sisa hmin hmax tag harga
+  n_jendela=$(nilai_jendela)
+  local n=$n_jendela
   local -a diblokir=()
   if [ "$n" -gt 0 ]; then
     batas=$(tanggal_minus $((n - 1)))
     for (( i = 0; i < RIWAYAT_TOTAL; i++ )); do
-      tanggal=${RIWAYAT[i]%%$'\t'*}
+      local tanggal=${RIWAYAT[i]%%$'\t'*}
       if [[ $tanggal < $batas || $tanggal > $HARI_INI ]]; then continue; fi
       diblokir+=("${RIWAYAT[i]#*$'\t'}")
     done
   fi
   for (( i = 0; i < TEMPAT_TOTAL; i++ )); do
     nama=${TEMPAT[i]%%$'\t'*}
+    sisa=${TEMPAT[i]#*$'\t'}
+    hmin=${sisa%%$'\t'*}
+    sisa=${sisa#*$'\t'}
+    hmax=${sisa%%$'\t'*}
+    sisa=${sisa#*$'\t'}
+    tag=${sisa%%$'\t'*}
+    # Budget: default harga_min <= budget; --ketat harga_max <= budget (kontrak 4.2).
+    if [ -n "$OPT_BUDGET" ]; then
+      harga=$hmin
+      [ "$OPT_KETAT" = 1 ] && harga=$hmax
+      if [ "$harga" -gt "$BUDGET_ANGKA" ]; then
+        GAGAL_BUDGET=$((GAGAL_BUDGET + 1))
+        # Saran budget: nilai terkecil di antara yang gagal budget DAN lolos tag.
+        if [ -z "$OPT_TAG" ] || punya_tag "$tag" "$OPT_TAG"; then
+          if [ -z "$SARAN_BUDGET" ] || [ "$harga" -lt "$SARAN_BUDGET" ]; then
+            SARAN_BUDGET=$harga
+          fi
+        fi
+        continue
+      fi
+    fi
+    # Tag: OR (kontrak 4.2).
+    if [ -n "$OPT_TAG" ] && ! punya_tag "$tag" "$OPT_TAG"; then
+      GAGAL_TAG=$((GAGAL_TAG + 1))
+      continue
+    fi
+    # Riwayat: diblokir bila dipilih dalam jendela N hari.
     if [ "${#diblokir[@]}" -gt 0 ] && printf '%s\n' "${diblokir[@]}" | grep -qxF "$nama"; then
       GAGAL_RIWAYAT=$((GAGAL_RIWAYAT + 1))
       continue
@@ -78,15 +138,17 @@ saring() {
   KANDIDAT_TOTAL=${#KANDIDAT[@]}
 }
 
-# Diagnosis saat semua kandidat habis (kontrak 5.7); selalu keluar 2.
+# Diagnosis saat semua kandidat habis (kontrak 5.7 / PLAN.md 4.4); selalu keluar 2.
 cetak_diagnosa() {
-  local mode_budget=$'harga_min'
-  [ "${OPT_KETAT:-0}" = 1 ] && mode_budget=$'harga_max'
+  local mode_budget=harga_min
+  [ "$OPT_KETAT" = 1 ] && mode_budget=harga_max
+  local n=$((TEMPAT_TOTAL - GAGAL_BUDGET - GAGAL_TAG - GAGAL_RIWAYAT))
+
   printf 'Tidak ada tempat yang lolos filter.\n' >&2
   printf '  %-18s: %d\n' 'total tempat' "$TEMPAT_TOTAL" >&2
   if [ "$GAGAL_BUDGET" -gt 0 ]; then
     printf '  %-18s: %d  (%s > %s)\n' 'gagal budget' "$GAGAL_BUDGET" "$mode_budget" \
-      "$(format_harga "$OPT_BUDGET" "$OPT_BUDGET")" >&2
+      "$(format_harga "$BUDGET_ANGKA" "$BUDGET_ANGKA")" >&2
   else
     printf '  %-18s: %d\n' 'gagal budget' "$GAGAL_BUDGET" >&2
   fi
@@ -95,16 +157,25 @@ cetak_diagnosa() {
   else
     printf '  %-18s: %d\n' 'gagal tag' "$GAGAL_TAG" >&2
   fi
-  if [ "$(nilai_jendela)" = 0 ]; then
+  if [ "$n_jendela" = 0 ]; then
     printf '  %-18s: %d  (riwayat diabaikan)\n' 'diblokir riwayat' "$GAGAL_RIWAYAT" >&2
   else
     printf '  %-18s: %d  (dipilih dalam %s hari terakhir)\n' 'diblokir riwayat' \
-      "$GAGAL_RIWAYAT" "$(nilai_jendela)" >&2
+      "$GAGAL_RIWAYAT" "$n_jendela" >&2
   fi
+
+  # Saran: hanya penyaring yang benar-benar menggugurkan tempat (PLAN.md 4.4).
   local -a saran=()
   if [ "$GAGAL_BUDGET" -gt 0 ]; then
     if [ -n "$SARAN_BUDGET" ]; then
-      saran+=("naikkan --budget (mis. --budget $(format_angka "$SARAN_BUDGET"))")
+      # 4000 -> 4rb; 12500 -> 12.500 (PLAN.md 4.4 butir 1).
+      local contoh
+      if [ "$((SARAN_BUDGET % 1000))" -eq 0 ]; then
+        contoh=$((SARAN_BUDGET / 1000))rb
+      else
+        contoh=$(format_harga "$SARAN_BUDGET" "$SARAN_BUDGET" | sed 's/^Rp//')
+      fi
+      saran+=("naikkan --budget (mis. --budget $contoh)")
     else
       saran+=("naikkan --budget")
     fi
@@ -116,7 +187,11 @@ cetak_diagnosa() {
     saran+=("--hari 0 untuk mengabaikan riwayat")
   fi
   if [ "${#saran[@]}" -gt 0 ]; then
-    printf 'Saran: %s.\n' "$(printf '%s, ' "${saran[@]}" | sed 's/, $//')" >&2
+    local gabung='' butir
+    for butir in "${saran[@]}"; do
+      gabung="${gabung:+$gabung, }$butir"
+    done
+    printf 'Saran: %s.\n' "$gabung" >&2
   fi
   exit 2
 }
