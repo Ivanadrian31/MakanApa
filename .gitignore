@@ -2,3 +2,13 @@ build/
 dist/
 *.deb
 tests/vendor/
+
+# Dokumen kerja lokal: tidak di-commit.
+# Catatan: PLAN.md, PLAN-A.md, PLAN-B.md, KONTRAK.md sudah TRACKED di git sejak commit
+# pertama, jadi entri di bawah ini tidak berlaku sampai berkasnya dilepas dari indeks
+# dengan `git rm --cached`. Lihat pesan commit/PR terkait.
+PLAN.md
+PLAN-A.md
+PLAN-B.md
+KONTRAK.md
+PROMPT-B.md
