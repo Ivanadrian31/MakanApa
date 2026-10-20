@@ -1,0 +1,7 @@
+# bash completion untuk makan-apa
+_makan_apa() {
+  local cur=${COMP_WORDS[COMP_CWORD]}
+  local perintah="init tambah daftar ubah hapus pilih riwayat impor"
+  mapfile -t COMPREPLY < <(compgen -W "$perintah" -- "$cur")
+}
+complete -F _makan_apa makan-apa

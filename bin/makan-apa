@@ -1,0 +1,223 @@
+#!/usr/bin/env bash
+# makan-apa - pemilih tempat makan dengan riwayat dan filter.
+# Entry point: siapkan lingkungan, muat lib/*.sh, parse opsi, dispatch perintah.
+set -euo pipefail
+umask 077
+IFS=$'\n\t'
+export LC_ALL=C
+
+readonly VERSI="0.1.0"
+readonly ZONA="Asia/Jakarta"
+
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 2))); then
+  printf 'makan-apa: butuh bash >= 4.2.\n' >&2
+  exit 3
+fi
+
+# Urutan pencarian pustaka: MAKAN_APA_LIB, repo, paket, sistem.
+cari_lib() {
+  local kandidat dir_skrip
+  dir_skrip=$(dirname "$0")
+  for kandidat in "${MAKAN_APA_LIB:-}" "$dir_skrip/../lib" \
+    "$dir_skrip/../share/makan-apa/lib" "/usr/share/makan-apa/lib"; do
+    if [ -n "$kandidat" ] && [ -d "$kandidat" ]; then
+      printf '%s\n' "$kandidat"
+      return 0
+    fi
+  done
+  return 1
+}
+
+LIB=$(cari_lib) || {
+  printf 'makan-apa: pustaka tidak ditemukan. Paket rusak; pasang ulang.\n' >&2
+  exit 3
+}
+
+DIR_DATA=${MAKAN_APA_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/makan-apa}
+DIR_CONFIG=${MAKAN_APA_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/makan-apa}
+FILE_TEMPAT=$DIR_DATA/tempat.tsv
+FILE_RIWAYAT=$DIR_DATA/riwayat.tsv
+FILE_KUNCI=$DIR_DATA/.kunci
+FILE_CONFIG=$DIR_CONFIG/config
+
+# Kontrak 8: opsi tidak diberikan bernilai kosong/0, bukan unset.
+OPT_BUDGET= OPT_KETAT=0 OPT_TAG= OPT_HARI= OPT_HARGA= OPT_CATATAN= OPT_NAMA_BARU=
+OPT_DRY_RUN=0 OPT_ULANG=0 OPT_TSV=0 OPT_SEMUA=0 OPT_PAKSA=0 OPT_GANTI=0
+BANTUAN=0 VERSI_DIMINTA=0
+PERINTAH=
+ARG_POS=()
+TMP=
+HARI_INI=
+RIWAYAT_HARI=3
+TEMPAT=()
+TEMPAT_TOTAL=0
+
+for berkas_lib in "$LIB"/*.sh; do
+  # shellcheck disable=SC1090 # path lib ditentukan saat runtime
+  . "$berkas_lib"
+done
+
+trap 'bersihkan_tmp' EXIT
+
+usage() {
+  cat <<'AKHIR'
+makan-apa 0.1.0 - pemilih tempat makan dengan riwayat dan filter
+
+Pemakaian:
+  makan-apa <perintah> [opsi]
+
+Perintah:
+  init                 salin data contoh ke direktori data
+  tambah NAMA          tambah tempat baru
+  daftar               tampilkan daftar tempat
+  ubah NAMA            ubah data tempat
+  hapus NAMA           hapus tempat
+  pilih                pilih satu tempat secara acak (utama)
+  riwayat              tampilkan riwayat pilihan
+  impor BERKAS         impor daftar dari berkas TSV
+
+Opsi umum:
+  -h, --help           tampilkan bantuan ini
+  -V, --version        tampilkan versi
+
+Opsi pilih:
+  --budget HARGA       batas harga: 25000, 25rb, 25k, 25.000
+  --ketat              bandingkan harga_max dengan budget
+  --tag T[,T...]       hanya tempat dengan salah satu tag ini
+  --hari N             jendela riwayat dalam hari (0 = abaikan riwayat)
+  --dry-run            tampilkan pilihan tanpa mencatat ke riwayat
+  --ulang              ganti pilihan terakhir hari ini
+
+Opsi daftar:
+  --budget HARGA, --ketat, --tag T[,T...], --tsv
+
+Kode keluar: 0 sukses, 1 pemakaian, 2 tidak ada kandidat,
+             3 data/IO, 4 data terkunci, 5 nama tidak ditemukan.
+
+Contoh:
+  makan-apa init
+  makan-apa tambah "Nasi Goreng Spesial" --harga 15rb-25rb --tag nasi
+  makan-apa pilih --budget 20rb --tag nasi,mie
+  makan-apa riwayat --hari 7
+AKHIR
+}
+
+# Sintaks dan opsi per perintah (kontrak 5.2, K10).
+usage_perintah() {
+  case $1 in
+    init) printf 'Pemakaian:\n  makan-apa init [--paksa]\n\nOpsi:\n  --paksa              timpa tempat.tsv yang sudah ada\n' ;;
+    tambah) printf 'Pemakaian:\n  makan-apa tambah NAMA --harga MIN[-MAKS] [--tag T[,T]] [--catatan C]\n\nOpsi:\n  --harga HARGA        wajib; 25000, 25rb, 25k, 25.000, atau MIN-MAKS\n  --tag T[,T...]       tag dipisah koma\n  --catatan C          catatan bebas, maks 200 karakter\n' ;;
+    daftar) printf 'Pemakaian:\n  makan-apa daftar [--tag T] [--budget H] [--ketat] [--tsv]\n\nOpsi:\n  --tag T[,T...]       hanya tempat dengan salah satu tag ini\n  --budget HARGA       batas harga\n  --ketat              bandingkan harga_max dengan budget\n  --tsv                cetak TSV tanpa header\n' ;;
+    ubah) printf 'Pemakaian:\n  makan-apa ubah NAMA [--nama-baru X] [--harga H] [--tag T] [--catatan C]\n\nOpsi:\n  --nama-baru X        ganti nama tempat\n  --harga HARGA        harga baru\n  --tag T[,T...]       tag baru; "" mengosongkan\n  --catatan C          catatan baru; "" mengosongkan\n' ;;
+    hapus) printf 'Pemakaian:\n  makan-apa hapus NAMA\n' ;;
+    pilih) printf 'Pemakaian:\n  makan-apa pilih [--budget H] [--ketat] [--tag T] [--hari N] [--dry-run] [--ulang]\n\nOpsi:\n  --budget HARGA       batas harga\n  --ketat              bandingkan harga_max dengan budget\n  --tag T[,T...]       hanya tempat dengan salah satu tag ini\n  --hari N             jendela riwayat dalam hari (0 = abaikan)\n  --dry-run            tampilkan tanpa mencatat ke riwayat\n  --ulang              ganti pilihan terakhir hari ini\n' ;;
+    riwayat) printf 'Pemakaian:\n  makan-apa riwayat [--hari N] [--semua]\n\nOpsi:\n  --hari N             N hari terakhir (default 14)\n  --semua              seluruh riwayat\n' ;;
+    impor) printf 'Pemakaian:\n  makan-apa impor BERKAS [--ganti]\n\nOpsi:\n  --ganti              ganti seluruh daftar dengan isi berkas\n' ;;
+    *) die_opsi "perintah \"$1\" tidak dikenal." ;;
+  esac
+  printf '\nKode keluar: 0 sukses, 1 pemakaian, 2 tidak ada kandidat,\n             3 data/IO, 4 data terkunci, 5 nama tidak ditemukan.\n'
+}
+
+perintah_dikenal() {
+  case $1 in
+    init | tambah | daftar | ubah | hapus | pilih | riwayat | impor) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# v = butuh nilai, b = bendera, kosong = tidak berlaku untuk perintah itu.
+jenis_opsi() {
+  case $1:$2 in
+    init:--paksa) printf b ;;
+    tambah:--harga | tambah:--tag | tambah:--catatan) printf v ;;
+    daftar:--tag | daftar:--budget) printf v ;;
+    daftar:--ketat | daftar:--tsv) printf b ;;
+    ubah:--nama-baru | ubah:--harga | ubah:--tag | ubah:--catatan) printf v ;;
+    pilih:--budget | pilih:--tag | pilih:--hari) printf v ;;
+    pilih:--ketat | pilih:--dry-run | pilih:--ulang) printf b ;;
+    riwayat:--hari) printf v ;;
+    riwayat:--semua) printf b ;;
+    impor:--ganti) printf b ;;
+  esac
+}
+
+set_opsi() { # $1=--nama $2=nilai
+  local var=${1#--}
+  var=${var^^}
+  var=${var//-/_}
+  printf -v "OPT_$var" '%s' "$2"
+}
+
+parse_opsi() {
+  local arg nama nilai jenis pemisah=0
+  while [ $# -gt 0 ]; do
+    arg=$1
+    shift
+    if [ "$pemisah" = 1 ]; then
+      ARG_POS+=("$arg")
+      continue
+    fi
+    case $arg in
+      --) pemisah=1; continue ;;
+      -h | --help) BANTUAN=1; continue ;;
+      -V | --version) VERSI_DIMINTA=1; continue ;;
+    esac
+    case $arg in
+      --*)
+        nama=${arg%%=*}
+        if [ "$nama" = "$arg" ]; then nilai=; else nilai=${arg#*=}; fi
+        if [ -z "$PERINTAH" ]; then
+          die_opsi "opsi \"$nama\" tidak dikenal."
+        fi
+        jenis=$(jenis_opsi "$PERINTAH" "$nama")
+        case $jenis in
+          b)
+            if [ -n "$nilai" ]; then die_opsi "opsi \"$nama\" tidak menerima nilai."; fi
+            set_opsi "$nama" 1
+            ;;
+          v)
+            if [ -z "$nilai" ]; then
+              if [ $# -eq 0 ]; then die_opsi "opsi \"$nama\" membutuhkan nilai."; fi
+              nilai=$1
+              shift
+            fi
+            set_opsi "$nama" "$nilai"
+            ;;
+          *) die_opsi "opsi \"$nama\" tidak berlaku untuk perintah \"$PERINTAH\"." ;;
+        esac
+        ;;
+      -?*) die_opsi "opsi \"$arg\" tidak dikenal." ;;
+      *)
+        if [ -z "$PERINTAH" ]; then
+          PERINTAH=$arg
+        else
+          ARG_POS+=("$arg")
+        fi
+        ;;
+    esac
+  done
+}
+
+main() {
+  parse_opsi "$@"
+  if [ "$VERSI_DIMINTA" = 1 ]; then
+    printf 'makan-apa %s\n' "$VERSI"
+    return 0
+  fi
+  if [ "$BANTUAN" = 1 ]; then
+    if [ -n "$PERINTAH" ]; then usage_perintah "$PERINTAH"; else usage; fi
+    return 0
+  fi
+  if [ -z "$PERINTAH" ]; then
+    usage >&2
+    return 1
+  fi
+  if ! declare -F "cmd_$PERINTAH" >/dev/null; then
+    perintah_dikenal "$PERINTAH" ||
+      die_opsi "perintah \"$PERINTAH\" tidak dikenal."
+    die "perintah \"$PERINTAH\" belum tersedia di build ini." 3
+  fi
+  "cmd_$PERINTAH" ${ARG_POS[@]+"${ARG_POS[@]}"}
+}
+
+main "$@"

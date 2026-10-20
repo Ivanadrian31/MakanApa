@@ -1,0 +1,5 @@
+makan-apa (0.1.0) unstable; urgency=medium
+
+  * Rilis awal: kerangka perintah, penyimpanan TSV, dan paket .deb.
+
+ -- Tim MakanApa <tim.makanapa@example.com>  Tue, 20 Oct 2026 09:00:00 +0700

@@ -1,0 +1,15 @@
+Package: makan-apa
+Version: 0.1.0
+Architecture: all
+Maintainer: Tim MakanApa <tim.makanapa@example.com>
+Installed-Size: 84
+Depends: tzdata
+Section: utils
+Priority: optional
+Description: pemilih tempat makan acak dengan riwayat dan filter
+ Mengingat tempat makan, memilih satu secara acak dengan filter
+ budget dan tag, serta menghindari tempat yang sudah dipilih dalam
+ beberapa hari terakhir.
+ .
+ Data disimpan sebagai berkas TSV di direktori XDG pengguna. Tidak
+ ada yang ditulis ke direktori home saat pemasangan.
