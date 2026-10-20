@@ -48,16 +48,43 @@ cek() { # cek <keterangan> <perintah...>
 
 # apt-get tidak boleh membaca stdin skrip ini.
 apt-get update -qq </dev/null
+
+# Kontrak 10: 15 berkas, mode 0755 (biner) dan 0644 (lainnya). dpkg-deb -c juga
+# mencantumkan direktori, jadi hanya entri berkas biasa yang dihitung.
+ISI_PAKET=$(dpkg-deb -c "/deb/$DEB" |
+    awk '$1 ~ /^-/ {print substr($1, 1, 10), $NF}' |
+    sed 's#^\(.*\) \./#\1 /#' | sort)
+ada_di_paket() { grep -qxF -e "$1 $2" <<<"$ISI_PAKET"; }
+cek "paket berisi 15 path" test "$(wc -l <<<"$ISI_PAKET")" -eq 15
+for path in /usr/share/makan-apa/lib/umum.sh /usr/share/makan-apa/lib/harga.sh \
+    /usr/share/makan-apa/lib/data.sh /usr/share/makan-apa/lib/saring.sh \
+    /usr/share/makan-apa/lib/cmd-dasar.sh /usr/share/makan-apa/lib/cmd-pilih.sh \
+    /usr/share/makan-apa/lib/cmd-ubah.sh /usr/share/makan-apa/lib/cmd-impor.sh \
+    /usr/share/makan-apa/lib/cmd-riwayat.sh /usr/share/makan-apa/contoh.tsv \
+    /usr/share/man/man1/makan-apa.1.gz /usr/share/bash-completion/completions/makan-apa \
+    /usr/share/doc/makan-apa/copyright /usr/share/doc/makan-apa/changelog.gz; do
+    cek "paket berisi $path" ada_di_paket -rw-r--r-- "$path"
+done
+cek "paket berisi /usr/bin/makan-apa" ada_di_paket -rwxr-xr-x /usr/bin/makan-apa
+
 apt-get install -y -qq "/deb/$DEB" </dev/null
 
-cek "biner terpasang dan executable" test -x /usr/bin/makan-apa
-cek "man page terpasang" test -f /usr/share/man/man1/makan-apa.1.gz
-cek "completion terpasang" test -f /usr/share/bash-completion/completions/makan-apa
+# dpkg pada citra kontainer mengecualikan /usr/share/man dan /usr/share/doc saat
+# mengekstrak, jadi berkas yang sudah terpasang diperiksa lewat daftar berkas paket
+# (dpkg-query -L), sedangkan berkas tanpa pengecualian diperiksa langsung.
+TERPASANG=$(dpkg-query -L makan-apa)
+terdaftar() { grep -qxF -e "$1" <<<"$TERPASANG"; }
+cek "terpasang: biner" terdaftar /usr/bin/makan-apa
+cek "terpasang: man page" terdaftar /usr/share/man/man1/makan-apa.1.gz
+cek "terpasang: dokumentasi" terdaftar /usr/share/doc/makan-apa/copyright
+cek "terpasang: changelog" terdaftar /usr/share/doc/makan-apa/changelog.gz
+
+cek "biner terpasang dan executable" test -x "/usr/bin/makan-apa"
+cek "completion terpasang" test -f "/usr/share/bash-completion/completions/makan-apa"
 for pustaka in umum harga data saring cmd-dasar cmd-pilih cmd-ubah cmd-impor cmd-riwayat; do
     cek "pustaka $pustaka.sh terpasang" test -f "/usr/share/makan-apa/lib/$pustaka.sh"
 done
-cek "isi contoh terpasang" test -f /usr/share/makan-apa/contoh.tsv
-cek "dokumentasi terpasang" test -f /usr/share/doc/makan-apa/copyright
+cek "isi contoh terpasang" test -f "/usr/share/makan-apa/contoh.tsv"
 cek "versi sesuai nama paket" test "$(makan-apa --version)" = "makan-apa $VERSI"
 
 # Perintah belum ada di build ini dijawab "belum tersedia" (kontrak P5). Keadaan itu
@@ -102,7 +129,7 @@ terpasang() {
 
 # remove: biner hilang, data pengguna tetap
 apt-get remove -y -qq makan-apa </dev/null
-cek "biner hilang setelah remove" test ! -e /usr/bin/makan-apa
+cek "biner hilang setelah remove" test ! -e "/usr/bin/makan-apa"
 cek "data tetap setelah remove" test -f "$MAKAN_APA_DATA_DIR/tempat.tsv"
 if terpasang; then
     echo "pasang-bersih: paket masih terpasang setelah remove." >&2
@@ -111,13 +138,13 @@ fi
 
 # purge: paket tidak terpasang, data pengguna tetap
 apt-get purge -y -qq makan-apa </dev/null
-cek "biner hilang setelah purge" test ! -e /usr/bin/makan-apa
+cek "biner hilang setelah purge" test ! -e "/usr/bin/makan-apa"
 cek "data tetap setelah purge" test -f "$MAKAN_APA_DATA_DIR/tempat.tsv"
 if terpasang; then
     echo "pasang-bersih: paket masih terpasang setelah purge." >&2
     exit 1
 fi
-cek "berkas paket hilang setelah purge" test ! -e /usr/share/makan-apa
+cek "berkas paket hilang setelah purge" test ! -e "/usr/share/makan-apa"
 echo "kontainer: remove dan purge lulus"
 EOS
     )"
