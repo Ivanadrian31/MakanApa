@@ -60,10 +60,23 @@ baca_tempat() {
 }
 
 # stdin (baris 5 kolom) -> tempat.tsv, atomik.
+# Komentar pengguna dipertahankan; header bawaan hanya dipakai bila belum ada komentar.
 tulis_tempat() {
+  local baris komentar=()
+  if [ -f "$FILE_TEMPAT" ]; then
+    while IFS= read -r baris || [ -n "$baris" ]; do
+      baris=${baris%$'\r'}
+      case $(pangkas "$baris") in
+        '#'*) komentar+=("$baris") ;;
+      esac
+    done <"$FILE_TEMPAT"
+  fi
+  if [ "${#komentar[@]}" -eq 0 ]; then
+    komentar=('# data tempat makan-apa - silakan diedit'
+      '# nama<TAB>harga_min<TAB>harga_max<TAB>tag<TAB>catatan')
+  fi
   {
-    printf '# data tempat makan-apa - silakan diedit\n'
-    printf '# nama<TAB>harga_min<TAB>harga_max<TAB>tag<TAB>catatan\n'
+    printf '%s\n' "${komentar[@]}"
     cat
   } | tulis_atomik "$FILE_TEMPAT" ||
     die "gagal menulis $FILE_TEMPAT." 3
