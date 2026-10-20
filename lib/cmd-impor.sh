@@ -2,6 +2,21 @@
 # shellcheck shell=bash # dimuat oleh bin/makan-apa (bukan skrip mandiri)
 # Hanya definisi fungsi; dimuat oleh bin/makan-apa.
 
+# Semua tag dalam daftar dipisah koma sah? (pola kontrak 6.3)
+# normalisasi_tag memanggil `die`; dijalankan di subshell agar statusnya bisa
+# diperiksa tanpa menghentikan pemanggil. Tanpa ini, `tag=$(gabung_tag ...)`
+# hanya membunuh subshell dalam dan barisnya lolos dengan tag kosong.
+impor_tag_sah() { # $1=daftar tag
+  local sisa=${1-} satu
+  [ -n "$sisa" ] || return 0
+  while [ -n "$sisa" ]; do
+    satu=${sisa%%,*}
+    if [ "$satu" = "$sisa" ]; then sisa=; else sisa=${sisa#*,}; fi
+    ( normalisasi_tag "$satu" ) >/dev/null 2>&1 || return 1
+  done
+  return 0
+}
+
 # Normalisasi satu baris impor -> stdout "nama\thmin\thmax\ttag\tcatatan".
 # Dijalankan di subshell pemanggil: galat validasi (yang memanggil die) hanya
 # menggagalkan baris itu, bukan seluruh impor - nomor barisnya dikumpulkan dulu.
@@ -22,6 +37,7 @@ impor_normalisasi() { # $1=baris mentah
   parse_harga "$hmax"
   hmax=$HARGA_NILAI
   if [ "$hmin" -gt "$hmax" ]; then return 1; fi
+  impor_tag_sah "$tag" || return 1
   tag=$(gabung_tag "$tag")
   printf '%s\t%s\t%s\t%s\t%s' "$nama" "$hmin" "$hmax" "$tag" "$catatan"
 }
