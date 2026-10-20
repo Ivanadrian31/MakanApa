@@ -107,6 +107,17 @@ Dampak: `cetak_diagnosa` (A) memilih field sesuai `OPT_KETAT`; variabel hasil `s
 bernama `SARAN_BUDGET` (menggantikan `SARAN_BUDGET_MIN`, kontrak §7); satu tes tambahan
 di A5.
 
+**P10 — Branch tahap tidak dihapus setelah merge (disetujui pemilik rencana).**
+Dulu langkah 7 alur Git menghapus branch setelah merge. Alasan perubahan: riwayat kerja
+per tahap tetap terlihat di remote sehingga mudah ditelusuri saat review atau bila perlu
+menelusuri ulang; menghapus branch menghilangkan bukti yang tidak selalu ada di commit squash.
+Dampak: (a) `gh pr merge <nomor> --squash` dipakai tanpa opsi hapus branch; (b)
+`git push origin --delete <branch>` dan `git branch -d/-D` dilarang untuk branch tahap,
+satu-satunya pengecualian branch uji `uji-akses` di A0; (c) branch lama tidak dipakai ulang,
+perbaikan susulan memakai branch baru (mis. `a-1-kerangka-perbaikan`); (d) sekitar 14 branch
+menumpuk di remote — tidak mengganggu CI karena CI hanya berjalan untuk PR dan push ke
+`main`; (e) reviewer harus memeriksa bahwa branch PR tidak ikut terhapus.
+
 ### 2.2 Klarifikasi aditif (menutup celah; wajib disetujui di PR kontrak pertama)
 
 `PLAN.md` tidak menentukan hal-hal berikut. Tanpa keputusan, dua implementasi akan berbeda
@@ -551,8 +562,12 @@ Berlaku untuk kode, tes, dokumen, salah ketik, dan perubahan kontrak.
    reviewer (orang yang tidak menulisnya). A mereview PR B; B mereview PR A.
 6. Merah → perbaiki di branch yang sama, push ulang. Dilarang merge dengan CI merah,
    `--no-verify`, push langsung ke `main`, atau force-push ke `main`.
-7. Setelah merge: hapus branch, `git switch main && git pull --ff-only` sebelum branch
-   berikutnya.
+7. Setelah merge: **branch tahap TIDAK dihapus** (P10) — `gh pr merge <nomor> --squash`
+   tanpa opsi hapus branch. Lalu `git switch main && git pull --ff-only` dan buat branch
+   baru dari `main`; branch lama tidak dipakai ulang, dan perbaikan susulan memakai branch
+   baru (mis. `a-1-kerangka-perbaikan`). Dilarang `git push origin --delete <branch>` dan
+   `git branch -d/-D` untuk branch tahap; satu-satunya pengecualian adalah branch uji
+   `uji-akses` di A0.
 
 Tambahan mengikat:
 
@@ -640,7 +655,7 @@ memverifikasi aksesnya:
 ```bash
 git clone https://github.com/Ivanadrian31/MakanApa.git
 git switch -c uji-akses && git commit --allow-empty -m "uji akses" && git push -u origin uji-akses
-git push origin --delete uji-akses
+git push origin --delete uji-akses   # satu-satunya branch yang boleh dihapus (P10)
 ```
 
 Bila undangan belum diterima, A **tidak menunggu**: A mengerjakan A1 di clone lokal (kode
@@ -827,6 +842,9 @@ menghambat mulai kerja.
 |5|Beban kerja|**Diterima**: A 53,5 jam vs B 51 jam (4,7%)|A0 mengecil jadi 0,5 jam (clone + verifikasi akses); B0 baru 2 jam (seed, undang, proteksi)|
 |6|`MAKAN_APA_LIB` (K11)|**Disesuaikan/disetujui**: variabel resmi, dipakai `bin/makan-apa` untuk menemukan `lib/`|K11 tetap; §6.2 memuatnya|
 |7|Siapa A, siapa B?|**A = `bimadji`** (inti skrip), **B = `Ivanadrian31`** (paket, dokumen, pemilik repo)|§1 tabel akun; B0 memuat tugas admin; A7 tidak lagi memuat tugas admin|
+|8|Branch tahap dihapus setelah merge?|**Tidak** (P10): branch dipertahankan sebagai riwayat kerja; hanya `uji-akses` (A0) boleh dihapus|§11 langkah 7 ditulis ulang; contoh `gh pr merge` di `PLAN-A.md` §7 memakai opsi hapus branch|
+|9|Job `pasang` kapan jadi wajib?|Tetap `continue-on-error: true` sampai B1 (PR #2) merge; **A** menghapus flag itu di A6, lalu **B** menambahkan `pasang` ke status check wajib di proteksi branch (A tidak mengubah proteksi, cukup meminta lewat komentar PR A6)|`ci.yml` A6; permintaan ke B di deskripsi PR A6|
+|10|Komentar di `tempat.tsv`?|Cukup dikumpulkan di atas untuk 0.1.0; posisi asli tidak dipertahankan. B diminta menambahkannya ke bagian "Keterbatasan" README di PR B1|`tulis_tempat` tidak berubah; keterbatasan didokumentasikan|
 
 Keputusan ini adalah bagian dari kontrak: mengubahnya butuh PR kontrak baru yang disetujui
 kedua orang, sama seperti bagian lain dokumen ini.
