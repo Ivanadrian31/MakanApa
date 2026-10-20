@@ -22,9 +22,16 @@ makan-apa riwayat --hari 7
 
 ## Contoh keluaran
 
-Transkrip demo dengan data contoh delapan tempat dan tanggal yang dipalsukan:
+Transkrip asli `PLAN.md` §1, direkam dari `main` dengan data contoh delapan tempat. Tanggal
+dipalsukan lewat `MAKAN_APA_TANGGAL` dan sumber acak dikunci lewat `MAKAN_APA_SEED=11`, jadi
+seluruh baris di bawah dapat diulang persis:
 
 ```console
+$ export MAKAN_APA_DATA_DIR=/tmp/makan-apa-demo
+$ makan-apa init
+Data contoh disalin ke /tmp/makan-apa-demo/tempat.tsv (8 tempat).
+Jalankan 'makan-apa pilih' untuk mencoba.
+
 $ MAKAN_APA_TANGGAL=2026-10-18 makan-apa pilih
 Bakso Sapi Campur
   Rp14.000-24.000  [bakso,berkuah]
@@ -33,39 +40,43 @@ Bakso Sapi Campur
   Tercatat di riwayat: 2026-10-18
 
 $ MAKAN_APA_TANGGAL=2026-10-19 makan-apa pilih
-Ayam Geprek Dada
-  Rp13.000-22.000  [nasi,pedas]
-  Catatan: sambal level 1-5
+Nasi Goreng Spesial
+  Rp15.000-25.000  [nasi,cepat]
+  Catatan: porsi besar
   Kandidat: 7 dari 8 (tersaring: budget 0, tag 0, riwayat 1)
   Tercatat di riwayat: 2026-10-19
 
 $ MAKAN_APA_TANGGAL=2026-10-20 makan-apa pilih
-Kopi Susu Gula Aren
-  Rp10.000-18.000  [kopi,minuman]
-  Catatan: bisa tanpa gula
+Es Teh Manis
+  Rp4.000-8.000  [minuman]
+  Catatan: gelas besar
   Kandidat: 6 dari 8 (tersaring: budget 0, tag 0, riwayat 2)
   Tercatat di riwayat: 2026-10-20
 
 $ MAKAN_APA_TANGGAL=2026-10-20 makan-apa riwayat --hari 3
 TANGGAL     NAMA
-2026-10-20  Kopi Susu Gula Aren
-2026-10-19  Ayam Geprek Dada
+2026-10-20  Es Teh Manis
+2026-10-19  Nasi Goreng Spesial
 2026-10-18  Bakso Sapi Campur
+3 catatan (3 hari terakhir).
 
 $ MAKAN_APA_TANGGAL=2026-10-20 makan-apa pilih --ulang --budget 20rb --ketat
 Nasi Uduk Komplit
   Rp12.000-20.000  [nasi]
   Catatan: telur balado
   Kandidat: 3 dari 8 (tersaring: budget 4, tag 0, riwayat 1)
-  Mengganti pilihan 2026-10-20: Kopi Susu Gula Aren -> Nasi Uduk Komplit
+  Mengganti pilihan 2026-10-20: Es Teh Manis -> Nasi Uduk Komplit
 
 $ MAKAN_APA_TANGGAL=2026-10-20 makan-apa riwayat --hari 1
 TANGGAL     NAMA
 2026-10-20  Nasi Uduk Komplit
+1 catatan (1 hari terakhir).
 ```
 
-Nama yang terpilih bergantung pada sumber acak; yang tetap adalah jumlah kandidat dan
-tidak adanya pengulangan dalam jendela riwayat.
+Yang tetap berapa pun sumber acaknya: jumlah kandidat turun satu per hari karena jendela
+riwayat, dan `--ulang` mengganti baris hari ini alih-alih menambah baris kedua. Nama yang
+terpilih bergantung pada sumber acak — tanpa `MAKAN_APA_SEED`, `pilih` memakai
+`/dev/urandom`.
 
 ## Cara kerja riwayat dan filter
 
