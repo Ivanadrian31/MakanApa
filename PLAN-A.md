@@ -61,7 +61,8 @@ Ukuran: kecil ≈ 2–3 jam, sedang ≈ 5–7 jam, besar ≈ 9–12 jam.
   `make`/`bats`/`shellcheck` terpasang di mesin.
 - **Berkas:** tidak ada (hanya konfigurasi git lokal).
 - **Tes wajib:** tidak ada.
-- **Kriteria selesai:** `git push -u origin uji-akses` berhasil lalu branch dihapus;
+- **Kriteria selesai:** `git push -u origin uji-akses` berhasil lalu branch itu dihapus
+  (`uji-akses` satu-satunya pengecualian penghapusan branch, P10);
   `bats --version`, `shellcheck --version`, `make --version` keluar 0.
 - **Branch/PR/reviewer:** tidak ada PR (branch uji dihapus). Reviewer: — .
 - **Bisa dimulai sekarang karena:** A tidak butuh repo untuk menulis kode. Bila `main` atau
@@ -213,7 +214,10 @@ Ukuran: kecil ≈ 2–3 jam, sedang ≈ 5–7 jam, besar ≈ 9–12 jam.
    review/CI: (a) jalankan `make check` + `make deb` lokal, (b) review PR B yang terbuka
    (`gh pr diff`), (c) tulis tes tahap berikutnya.
 4. Saat CI merah: perbaiki di branch yang sama, push ulang; jangan membuat branch baru.
-5. Saat titik temu: jalankan `make check && make deb && make lint` di `main` hasil merge,
+5. Setelah PR merge: `git switch main && git pull --ff-only`, lalu branch baru untuk tahap
+   berikutnya. **Branch lama tidak dihapus dan tidak dipakai ulang** (P10); perbaikan susulan
+   memakai branch baru, mis. `a-1-kerangka-perbaikan`.
+6. Saat titik temu: jalankan `make check && make deb && make lint` di `main` hasil merge,
    catat hasilnya di komentar PR.
 
 ## 5. Stub dan data palsu
@@ -251,7 +255,7 @@ git config user.name "bimadji" && git config user.email "<email-A>"
 git switch -c uji-akses
 git commit --allow-empty -m "uji akses"
 git push -u origin uji-akses            # harus berhasil; bila 403, minta B mengundang
-git push origin --delete uji-akses
+git push origin --delete uji-akses       # satu-satunya branch yang boleh dihapus (P10)
 git switch main
 ```
 
@@ -279,8 +283,8 @@ git push -u origin a-2-perintah-dasar
 gh pr create --base main --title "A2: perintah dasar (init/tambah/daftar/hapus)" \
   --body "Cakupan: ... | Tes: tests/tambah.bats (8), tests/daftar.bats (3) | make check: hijau lokal"
 gh pr checks --watch
-gh pr merge --squash --delete-branch
-git switch main && git pull --ff-only
+gh pr merge --squash                       # tanpa --delete-branch (P10)
+git switch main && git pull --ff-only      # branch lama dibiarkan di remote
 ```
 
 Review PR B (silang):
@@ -289,7 +293,7 @@ Review PR B (silang):
 gh pr checkout 4
 make check && make deb
 gh pr review 4 --approve --body "Diperiksa: string kontrak §5.4, tes 5 kasus, make check hijau"
-gh pr merge 4 --squash --delete-branch
+gh pr merge 4 --squash                     # tanpa --delete-branch (P10)
 ```
 
 Verifikasi proteksi (B yang memasang, A hanya memeriksa; B adalah pemilik repo):
