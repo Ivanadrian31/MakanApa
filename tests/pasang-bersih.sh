@@ -136,9 +136,16 @@ if terpasang; then
     exit 1
 fi
 
-# purge: paket tidak terpasang, data pengguna tetap
-apt-get purge -y -qq makan-apa </dev/null
-cek "biner hilang setelah purge" test ! -e "/usr/bin/makan-apa"
+# Paket tanpa conffile hilang total saat remove, lalu `apt-get purge` tidak
+# menemukannya ("E: Unable to locate package"). Purge hanya perlu dijalankan bila
+# dpkg masih menyimpan paket; kalau tidak, keadaan setelah purge sudah berlaku.
+if dpkg-query -W -f='${db:Status-Status}' makan-apa >/dev/null 2>&1; then
+    apt-get purge -y -qq makan-apa </dev/null
+    cek "biner hilang setelah purge" test ! -e "/usr/bin/makan-apa"
+else
+    echo "  info paket sudah hilang total saat remove; purge tidak perlu dijalankan"
+    cek "biner hilang setelah purge" test ! -e "/usr/bin/makan-apa"
+fi
 cek "data tetap setelah purge" test -f "$MAKAN_APA_DATA_DIR/tempat.tsv"
 if terpasang; then
     echo "pasang-bersih: paket masih terpasang setelah purge." >&2
