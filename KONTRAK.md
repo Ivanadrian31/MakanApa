@@ -131,6 +131,18 @@ setelah A2 merge; (c) `tulis_tempat` yang sejak A1 tidak pernah punya tes kini w
 `tambah menangani CRLF di tempat.tsv` — karena `cmd_tambah` membuat parser terjangkau lewat
 CLI; (d) berkas sementara untuk driver tes tidak boleh ikut ter-commit.
 
+**P12 — `tests/helper.bash` memakai direktori sementara yang benar di bats 1.2 (disetujui
+pemilik rencana).**
+§9 membekukan helper dengan `$BATS_TEST_TMPDIR`. Variabel itu baru tersedia sejak bats 1.4;
+di bats 1.2 (Ubuntu 22.04) masih kosong ketika helper di-`load`, sehingga
+`MAKAN_APA_DATA_DIR` menjadi `/data` dan setiap tes yang menyentuh data gagal dengan kode
+keluar 3. Akar masalahnya bukan tes A2, melainkan kontrak §11 langkah 4 (CI wajib hijau di
+24.04 **dan** 22.04) bertentangan dengan isi §9. Dampak: helper memakai `BATS_TEST_TMPDIR`
+bila ada, selain itu direktori unik dari `mktemp -d` di dalam `BATS_TMPDIR`; isolasi per tes
+tetap terjaga karena `load` dieksekusi ulang untuk tiap tes. Alasan memilih `mktemp -d`
+alih-alih `BATS_TMPDIR` polos: `BATS_TMPDIR` bersama seluruh berkas tes, sehingga data satu
+tes bisa bocor ke tes berikutnya.
+
 ### 2.2 Klarifikasi aditif (menutup celah; wajib disetujui di PR kontrak pertama)
 
 `PLAN.md` tidak menentukan hal-hal berikut. Tanpa keputusan, dua implementasi akan berbeda
@@ -512,8 +524,17 @@ Opsi yang tidak diberikan bernilai kosong/`0`, bukan `unset` — supaya `set -u`
 - `tests/helper.bash` (A1, beku):
 
 ```bash
-export MAKAN_APA_DATA_DIR="$BATS_TEST_TMPDIR/data"
-export MAKAN_APA_CONFIG_DIR="$BATS_TEST_TMPDIR/config"
+# BATS_TEST_TMPDIR baru ada sejak bats 1.4; di bats 1.2 (22.04) masih kosong saat
+# helper dimuat, sehingga $BATS_TEST_TMPDIR/data menjadi /data (P12).
+if [ -n "${BATS_TEST_TMPDIR:-}" ]; then
+  _bats_tmp=$BATS_TEST_TMPDIR
+elif [ -n "${BATS_TMPDIR:-}" ]; then
+  _bats_tmp=$(mktemp -d "${BATS_TMPDIR:-/tmp}/makan-apa-XXXXXX")
+else
+  _bats_tmp=$(mktemp -d)
+fi
+export MAKAN_APA_DATA_DIR="$_bats_tmp/data"
+export MAKAN_APA_CONFIG_DIR="$_bats_tmp/config"
 export MAKAN_APA_TANGGAL=2026-10-20
 export MAKAN_APA_SEED=42
 export PATH="$BATS_TEST_DIRNAME/../bin:$PATH"
@@ -859,6 +880,7 @@ menghambat mulai kerja.
 |9|Job `pasang` kapan jadi wajib?|Tetap `continue-on-error: true` sampai B1 (PR #2) merge; **A** menghapus flag itu di A6, lalu **B** menambahkan `pasang` ke status check wajib di proteksi branch (A tidak mengubah proteksi, cukup meminta lewat komentar PR A6)|`ci.yml` A6; permintaan ke B di deskripsi PR A6|
 |10|Komentar di `tempat.tsv`?|Cukup dikumpulkan di atas untuk 0.1.0; posisi asli tidak dipertahankan. B diminta menambahkannya ke bagian "Keterbatasan" README di PR B1|`tulis_tempat` tidak berubah; keterbatasan didokumentasikan|
 |11|Tes `tulis_tempat` kapan ditulis?|**WAJIB di A2**, bukan menunggu A6. `tulis_tempat` sudah ada sejak A1 dan sempat lolos tanpa tes karena tidak terjangkau dari CLI; sekarang `cmd_tambah` dibuat, jadi parser bisa diuji lewat CLI: `tambah mempertahankan komentar di tempat.tsv`, `tambah memperingatkan baris rusak dan tetap menyimpan baris valid`, `tambah menangani CRLF di tempat.tsv`|P11 baru; `PLAN-A.md` A2 berkembang (+1 jam); driver sementara tidak boleh ikut ter-commit|
+|12|Helper tes memakai `BATS_TEST_TMPDIR`|**Tidak** — variabel itu belum ada di bats 1.2 (22.04) sehingga `MAKAN_APA_DATA_DIR` menjadi `/data` dan semua tes data gagal. Helper memakai `BATS_TEST_TMPDIR` bila ada, selain itu `mktemp -d` di `BATS_TMPDIR` (P12)|§9 diperbarui; `tests/helper.bash` diganti di PR A2|
 
 Keputusan ini adalah bagian dari kontrak: mengubahnya butuh PR kontrak baru yang disetujui
 kedua orang, sama seperti bagian lain dokumen ini.
