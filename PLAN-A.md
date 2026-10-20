@@ -1,7 +1,8 @@
 # PLAN-A — Orang A (`bimadji`)
 
 Inti skrip, penyimpanan, penyaringan, diagnosis, plus infrastruktur (Makefile, CI, helper
-tes) dan audit kasus tepi. Beban: **53,5 jam** (≈ 13 hari pada 4 jam/hari). A adalah
+tes) dan audit kasus tepi. Beban: **54,5 jam** (≈ 13–14 hari pada 4 jam/hari; naik 1 jam dari
+A2 yang sekarang membawa `muat_config`/`baca_riwayat`/`tulis_riwayat` — lihat A2). A adalah
 **kolaborator** di repo B (`Ivanadrian31/MakanApa`), bukan pemilik: A tidak mengubah
 pengaturan repo dan tidak push langsung ke `main`.
 
@@ -95,13 +96,19 @@ Ukuran: kecil ≈ 2–3 jam, sedang ≈ 5–7 jam, besar ≈ 9–12 jam.
   man, dan completion disalin dari kontrak (P4), bukan menunggu B. Perintah milik B
   dilayani `declare -F` (pesan "belum tersedia", P5).
 
-### A2 — `harga` + `init`/`tambah`/`daftar`/`hapus` (besar, 10 jam)
+### A2 — `harga` + `init`/`tambah`/`daftar`/`hapus` + fungsi riwayat (besar, 11 jam)
 
 - **Cakupan:** `parse_harga` (25000/25rb/25k/25.000/25RB), `format_harga`; validasi nama
   dan tag dipakai `tambah`/`daftar`; `cmd_init` (cari `contoh.tsv` 4 lokasi, `--paksa`),
   `cmd_tambah`, `cmd_daftar` (lebar kolom, potong `...`, `--tsv`, ringkasan stderr),
-  `cmd_hapus`.
-- **Berkas:** `lib/harga.sh`, `lib/cmd-dasar.sh`, `tests/tambah.bats`, `tests/daftar.bats`.
+  `cmd_hapus`; **`muat_config`, `baca_riwayat`, `tulis_riwayat` di `lib/data.sh`** — yang
+  tiga terakhir bukan pilihan, tapi prasyarat PR B2 yang sudah terbuka dan merah karena
+  `baca_riwayat` belum ada. KONTRAK §7 sudah mengikat tanda tangannya: `muat_config`
+  mengisi `RIWAYAT_HARI` (default 3, kunci asing → peringatan, nilai salah → keluar 3),
+  `baca_riwayat` mengisi `RIWAYAT[]`/`RIWAYAT_TOTAL` (2 kolom, lewati tanggal tidak valid
+  dan masa depan + peringatan), `tulis_riwayat` menulis atomik dan memangkas entri > 90 hari.
+- **Berkas:** `lib/harga.sh`, `lib/cmd-dasar.sh`, `lib/data.sh`, `tests/tambah.bats`,
+  `tests/daftar.bats`.
 - **Tes wajib (`tests/tambah.bats`, 8):** `tambah valid menyimpan lima kolom`,
   `tiga format harga setara`, `harga bertitik diterima`,
   `harga_min lebih besar dari harga_max ditolak`, `nama duplikat ditolak`,
@@ -109,12 +116,18 @@ Ukuran: kecil ≈ 2–3 jam, sedang ≈ 5–7 jam, besar ≈ 9–12 jam.
   `nama berawalan pagar ditolak`.
   **(`tests/daftar.bats`, 3):** `tabel terurut dan berisi delapan baris`,
   `--tsv mencetak lima kolom tanpa header`, `daftar kosong keluar 0 dengan pesan Belum ada data`.
+  **(`tests/tambah.bats`, 3 tambahan wajib — `tulis_tempat` sempat lolos tanpa tes di A1):**
+  `tambah mempertahankan komentar di tempat.tsv`, `tambah memperingatkan baris rusak dan
+  tetap menyimpan baris valid`, `tambah menangani CRLF di tempat.tsv`.
 - **Kriteria selesai:** `init` + `tambah` + `daftar` + `hapus` jalan di `MAKAN_APA_DATA_DIR`
   tmp; lebar kolom sama dengan contoh `PLAN.md` §2.5; `daftar --tsv | wc -l` = 8 setelah
-  `init`.
-- **Branch:** `a-2-perintah-dasar` · **PR:** #3 · **Reviewer:** B.
+  `init`; **`make check` hijau tanpa tes yang di-skip; `makan-apa riwayat` jalan tanpa galat
+  `baca_riwayat: command not found`** (prasyarat PR B2); tidak ada driver sementara yang
+  ikut ter-commit.
+- **Branch:** `a-2-perintah-dasar` · **PR:** #6 · **Reviewer:** B.
 - **Bisa dimulai sekarang karena:** `parse_harga` milik sendiri (P2); hanya butuh `bin` dan
-  `data` dari A1.
+  `data` dari A1. Melepas blokir PR B2 adalah tambahan gratis — tidak menambah ketergantungan
+  ke tahap lain.
 
 ### A3 — `saring` dasar + `cmd_pilih` (sedang, 6 jam)
 
