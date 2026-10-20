@@ -122,6 +122,9 @@ Mencopot paket tidak menghapus data pengguna.
 - Tidak ada filter jarak atau area; alat bekerja offline tanpa sumber koordinat.
 - Nama non-ASCII dapat menggeser kolom tabel karena program berjalan dengan `LC_ALL=C`.
 - Versi 0.1.0 tidak menyediakan impor/ekspor format selain TSV.
+- Baris komentar pada `tempat.tsv` dikumpulkan ulang di atas berkas setiap kali daftar
+  ditulis ulang (oleh `tambah`, `ubah`, `hapus`, atau `impor`), jadi posisinya di tengah
+  berkas tidak dipertahankan.
 
 ## Lisensi
 
