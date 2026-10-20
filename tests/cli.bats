@@ -18,7 +18,7 @@ load helper
 @test "perintah tidak dikenal keluar 1 dengan saran help" {
   run bash -c 'makan-apa pili 2>&1 >/dev/null'
   [ "$status" -eq 1 ]
-  [[ $output == *tidak dikenal* ]]
+  [[ $output == *"tidak dikenal"* ]]
   [[ $output == *"Coba 'makan-apa --help'."* ]]
 }
 

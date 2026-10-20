@@ -1,4 +1,5 @@
 # lib/umum.sh - galat, tanggal, kunci, tulis atomik, validasi dasar.
+# shellcheck shell=bash # dimuat oleh bin/makan-apa (bukan skrip mandiri)
 # Hanya definisi fungsi; dimuat oleh bin/makan-apa.
 
 die() { # $1=pesan $2=kode keluar
@@ -87,6 +88,7 @@ validasi_nama() { # $1 -> NAMA_BERSIH
   if [ "${#nama}" -gt 80 ]; then
     die "nama tempat maksimal 80 karakter." 1
   fi
+  # shellcheck disable=SC2034 # dibaca pemanggil setelah validasi
   NAMA_BERSIH=$nama
 }
 
@@ -95,5 +97,6 @@ normalisasi_tag() { # $1 -> TAG_BERSIH (satu tag)
   if ! [[ $tag =~ ^[a-z0-9][a-z0-9_-]{0,19}$ ]]; then
     die "tag \"$1\" tidak valid. Gunakan huruf kecil, angka, '-' atau '_' (maks 20 karakter)." 1
   fi
+  # shellcheck disable=SC2034 # dibaca pemanggil setelah validasi
   TAG_BERSIH=$tag
 }

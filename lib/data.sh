@@ -1,4 +1,5 @@
 # lib/data.sh - baca/tulis tempat.tsv (kontrak 3.2).
+# shellcheck shell=bash # dimuat oleh bin/makan-apa (bukan skrip mandiri)
 # Hanya definisi fungsi; dimuat oleh bin/makan-apa.
 
 # Isi KOLOM[] dari satu baris TSV; tab di akhir baris tetap menghasilkan kolom kosong.

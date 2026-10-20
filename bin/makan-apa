@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034 # variabel global kontrak 8 diisi di sini, dibaca lib/*.sh
 # makan-apa - pemilih tempat makan dengan riwayat dan filter.
 # Entry point: siapkan lingkungan, muat lib/*.sh, parse opsi, dispatch perintah.
 set -euo pipefail
@@ -6,8 +7,8 @@ umask 077
 IFS=$'\n\t'
 export LC_ALL=C
 
-readonly VERSI="0.1.0"
-readonly ZONA="Asia/Jakarta"
+VERSI="0.1.0"
+ZONA="Asia/Jakarta"
 
 if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 2))); then
   printf 'makan-apa: butuh bash >= 4.2.\n' >&2
@@ -15,12 +16,13 @@ if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 2))); 
 fi
 
 # Urutan pencarian pustaka: MAKAN_APA_LIB, repo, paket, sistem.
+# Kandidat hanya sah bila berisi umum.sh; /usr/bin/../lib ada tapi bukan pustaka kita.
 cari_lib() {
   local kandidat dir_skrip
   dir_skrip=$(dirname "$0")
   for kandidat in "${MAKAN_APA_LIB:-}" "$dir_skrip/../lib" \
     "$dir_skrip/../share/makan-apa/lib" "/usr/share/makan-apa/lib"; do
-    if [ -n "$kandidat" ] && [ -d "$kandidat" ]; then
+    if [ -n "$kandidat" ] && [ -f "$kandidat/umum.sh" ]; then
       printf '%s\n' "$kandidat"
       return 0
     fi
@@ -41,9 +43,21 @@ FILE_KUNCI=$DIR_DATA/.kunci
 FILE_CONFIG=$DIR_CONFIG/config
 
 # Kontrak 8: opsi tidak diberikan bernilai kosong/0, bukan unset.
-OPT_BUDGET= OPT_KETAT=0 OPT_TAG= OPT_HARI= OPT_HARGA= OPT_CATATAN= OPT_NAMA_BARU=
-OPT_DRY_RUN=0 OPT_ULANG=0 OPT_TSV=0 OPT_SEMUA=0 OPT_PAKSA=0 OPT_GANTI=0
-BANTUAN=0 VERSI_DIMINTA=0
+OPT_BUDGET=""
+OPT_KETAT=0
+OPT_TAG=""
+OPT_HARI=""
+OPT_HARGA=""
+OPT_CATATAN=""
+OPT_NAMA_BARU=""
+OPT_DRY_RUN=0
+OPT_ULANG=0
+OPT_TSV=0
+OPT_SEMUA=0
+OPT_PAKSA=0
+OPT_GANTI=0
+BANTUAN=0
+VERSI_DIMINTA=0
 PERINTAH=
 ARG_POS=()
 TMP=
