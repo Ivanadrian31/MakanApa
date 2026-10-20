@@ -87,8 +87,9 @@ saring() {
   GAGAL_TAG=0
   GAGAL_RIWAYAT=0
   SARAN_BUDGET=
-  local n batas i nama sisa hmin hmax tag harga
-  n=$(nilai_jendela)
+  local batas i nama sisa hmin hmax tag harga
+  n_jendela=$(nilai_jendela)
+  local n=$n_jendela
   local -a diblokir=()
   if [ "$n" -gt 0 ]; then
     batas=$(tanggal_minus $((n - 1)))
@@ -137,15 +138,17 @@ saring() {
   KANDIDAT_TOTAL=${#KANDIDAT[@]}
 }
 
-# Diagnosis saat semua kandidat habis (kontrak 5.7); selalu keluar 2.
+# Diagnosis saat semua kandidat habis (kontrak 5.7 / PLAN.md 4.4); selalu keluar 2.
 cetak_diagnosa() {
-  local mode_budget=$'harga_min'
-  [ "${OPT_KETAT:-0}" = 1 ] && mode_budget=$'harga_max'
+  local mode_budget=harga_min
+  [ "$OPT_KETAT" = 1 ] && mode_budget=harga_max
+  local n=$((TEMPAT_TOTAL - GAGAL_BUDGET - GAGAL_TAG - GAGAL_RIWAYAT))
+
   printf 'Tidak ada tempat yang lolos filter.\n' >&2
   printf '  %-18s: %d\n' 'total tempat' "$TEMPAT_TOTAL" >&2
   if [ "$GAGAL_BUDGET" -gt 0 ]; then
     printf '  %-18s: %d  (%s > %s)\n' 'gagal budget' "$GAGAL_BUDGET" "$mode_budget" \
-      "$(format_harga "$OPT_BUDGET" "$OPT_BUDGET")" >&2
+      "$(format_harga "$BUDGET_ANGKA" "$BUDGET_ANGKA")" >&2
   else
     printf '  %-18s: %d\n' 'gagal budget' "$GAGAL_BUDGET" >&2
   fi
@@ -154,16 +157,25 @@ cetak_diagnosa() {
   else
     printf '  %-18s: %d\n' 'gagal tag' "$GAGAL_TAG" >&2
   fi
-  if [ "$(nilai_jendela)" = 0 ]; then
+  if [ "$n_jendela" = 0 ]; then
     printf '  %-18s: %d  (riwayat diabaikan)\n' 'diblokir riwayat' "$GAGAL_RIWAYAT" >&2
   else
     printf '  %-18s: %d  (dipilih dalam %s hari terakhir)\n' 'diblokir riwayat' \
-      "$GAGAL_RIWAYAT" "$(nilai_jendela)" >&2
+      "$GAGAL_RIWAYAT" "$n_jendela" >&2
   fi
+
+  # Saran: hanya penyaring yang benar-benar menggugurkan tempat (PLAN.md 4.4).
   local -a saran=()
   if [ "$GAGAL_BUDGET" -gt 0 ]; then
     if [ -n "$SARAN_BUDGET" ]; then
-      saran+=("naikkan --budget (mis. --budget $(format_angka "$SARAN_BUDGET"))")
+      # 4000 -> 4rb; 12500 -> 12.500 (PLAN.md 4.4 butir 1).
+      local contoh
+      if [ "$((SARAN_BUDGET % 1000))" -eq 0 ]; then
+        contoh=$((SARAN_BUDGET / 1000))rb
+      else
+        contoh=$(format_harga "$SARAN_BUDGET" "$SARAN_BUDGET" | sed 's/^Rp//')
+      fi
+      saran+=("naikkan --budget (mis. --budget $contoh)")
     else
       saran+=("naikkan --budget")
     fi
@@ -175,7 +187,11 @@ cetak_diagnosa() {
     saran+=("--hari 0 untuk mengabaikan riwayat")
   fi
   if [ "${#saran[@]}" -gt 0 ]; then
-    printf 'Saran: %s.\n' "$(printf '%s, ' "${saran[@]}" | sed 's/, $//')" >&2
+    local gabung='' butir
+    for butir in "${saran[@]}"; do
+      gabung="${gabung:+$gabung, }$butir"
+    done
+    printf 'Saran: %s.\n' "$gabung" >&2
   fi
   exit 2
 }
