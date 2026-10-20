@@ -275,3 +275,70 @@ Jalankan 'makan-apa init' untuk data contoh atau 'makan-apa tambah NAMA --harga 
   [[ $output != *"Jauh"* ]]
   [[ $output == *"Tepi"* ]]
 }
+
+@test "satu tempat belum pernah dipilih langsung dipilih" {
+  mkdir -p "$MAKAN_APA_DATA_DIR"
+  printf 'Soto Betawi\t18000\t28000\tsoto\tporsi besar\n' \
+    >"$MAKAN_APA_DATA_DIR/tempat.tsv"
+
+  # Detail dari pemanggilan yang sama: pilih mencatat, jadi pemanggilan kedua
+  # sudah melihat tempat itu diblokir riwayat.
+  run bash -c 'makan-apa pilih 2>&1 >/dev/null'
+  [ "$status" -eq 0 ]
+  [[ $output == *"Kandidat: 1 dari 1 (tersaring: budget 0, tag 0, riwayat 0)"* ]]
+  [[ $output == *"Tercatat di riwayat: 2026-10-20"* ]]
+
+  run bash -c 'tail -1 "$MAKAN_APA_DATA_DIR/riwayat.tsv"'
+  [ "$output" = "2026-10-20	Soto Betawi" ]
+}
+
+@test "satu tempat sudah dipilih hari ini diblokir riwayat" {
+  mkdir -p "$MAKAN_APA_DATA_DIR"
+  printf 'Soto Betawi\t18000\t28000\tsoto\tporsi besar\n' \
+    >"$MAKAN_APA_DATA_DIR/tempat.tsv"
+  printf '2026-10-20\tSoto Betawi\n' >"$MAKAN_APA_DATA_DIR/riwayat.tsv"
+
+  run bash -c 'makan-apa pilih 2>&1 >/dev/null'
+  [ "$status" -eq 2 ]
+  [[ $output == *"diblokir riwayat  : 1  (dipilih dalam 3 hari terakhir)"* ]]
+  [[ $output == *"Saran: --hari 0 untuk mengabaikan riwayat."* ]]
+
+  # stdout kosong: larangan riwayat tidak dilanggar diam-diam.
+  run bash -c 'makan-apa pilih 2>/dev/null'
+  [ "$output" = "" ]
+}
+
+@test "semua tempat diblokir riwayat memberi saran hari 0" {
+  mkdir -p "$MAKAN_APA_DATA_DIR"
+  printf 'A\t10000\t20000\tnasi\tx\nB\t20000\t30000\tmie\ty\n' \
+    >"$MAKAN_APA_DATA_DIR/tempat.tsv"
+  printf '2026-10-20\tA\n2026-10-19\tB\n' >"$MAKAN_APA_DATA_DIR/riwayat.tsv"
+
+  run bash -c 'makan-apa pilih 2>&1 >/dev/null'
+  [ "$status" -eq 2 ]
+  [[ $output == *"gagal budget      : 0"* ]]
+  [[ $output == *"gagal tag         : 0"* ]]
+  [[ $output == *"diblokir riwayat  : 2"* ]]
+  [[ $output == *"Saran: --hari 0 untuk mengabaikan riwayat."* ]]
+
+  # Dengan --hari 0 keduanya kembali menjadi kandidat.
+  run bash -c 'makan-apa pilih --hari 0 2>&1 >/dev/null'
+  [ "$status" -eq 0 ]
+  [[ $output == *"Kandidat: 2 dari 2 (tersaring: budget 0, tag 0, riwayat 0)"* ]]
+}
+
+@test "ulang saat tidak ada kandidat tersisa keluar 2 dengan saran hari 0" {
+  mkdir -p "$MAKAN_APA_DATA_DIR"
+  printf 'Soto Betawi\t18000\t28000\tsoto\tporsi besar\n' \
+    >"$MAKAN_APA_DATA_DIR/tempat.tsv"
+  printf '2026-10-20\tSoto Betawi\n' >"$MAKAN_APA_DATA_DIR/riwayat.tsv"
+
+  run bash -c 'makan-apa pilih --ulang 2>&1 >/dev/null'
+  [ "$status" -eq 2 ]
+  [[ $output == *"diblokir riwayat  : 1"* ]]
+  [[ $output == *"Saran: --hari 0 untuk mengabaikan riwayat."* ]]
+
+  # Riwayat tidak berubah oleh percobaan yang gagal.
+  run bash -c 'tail -1 "$MAKAN_APA_DATA_DIR/riwayat.tsv"'
+  [ "$output" = "2026-10-20	Soto Betawi" ]
+}
