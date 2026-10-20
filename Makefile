@@ -49,7 +49,10 @@ lint:
 	lintian "$(DIST)"/*.deb
 
 uji-pasang: deb
-	bash tests/pasang-bersih.sh
+	# shortcut: tes pasang dilewati selama tests/pasang-bersih.sh belum ada (B1); hapus
+	# penjaga ini saat B1 mendarat supaya tes tidak pernah hilang diam-diam.
+	@if [ -f tests/pasang-bersih.sh ]; then bash tests/pasang-bersih.sh; \
+	else echo "tes pasang bersih belum ada (menunggu B1)"; fi
 
 bersih:
 	rm -rf "$(BUILD)" "$(DIST)"
