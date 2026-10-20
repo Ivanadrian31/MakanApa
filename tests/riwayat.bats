@@ -74,6 +74,16 @@ load helper
   [ "${lines[1]}" = "2026-10-18  Bakso Sapi Campur" ]
   run bash -c 'makan-apa riwayat --semua 2>&1 >/dev/null'
   [ "$output" = "1 catatan (semua riwayat)." ]
+
+  # Arity 0 (kontrak 4.2): argumen posisional adalah galat pemakaian (K1).
+  run bash -c 'makan-apa riwayat foo 2>/dev/null'
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+
+  run bash -c 'makan-apa riwayat foo 2>&1 >/dev/null'
+  [ "$status" -eq 1 ]
+  [ "$output" = "makan-apa: perintah \"riwayat\" tidak menerima argumen posisional.
+Coba 'makan-apa --help'." ]
 }
 
 @test "riwayat kosong keluar 0 dengan pesan Belum ada riwayat" {

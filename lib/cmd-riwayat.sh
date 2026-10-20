@@ -14,6 +14,11 @@ cmd_riwayat() { # tanpa argumen; OPT_HARI/OPT_SEMUA sudah di-parse
   local i jumlah nama tanggal label urut
   local -a kunci=()
 
+  # Arity 0 (kontrak 4.2); lebih dari satu argumen adalah galat pemakaian (K1).
+  if [ "$#" -gt 0 ]; then
+    die_opsi "perintah \"riwayat\" tidak menerima argumen posisional."
+  fi
+
   if [ "$OPT_SEMUA" = 1 ] && [ -n "$OPT_HARI" ]; then
     die "opsi --semua dan --hari tidak bisa dipakai bersama." 1
   fi
