@@ -47,3 +47,31 @@ load helper
   [ "$status" -eq 0 ]
   [ "$output" = "Belum ada data. Jalankan 'makan-apa init' atau 'makan-apa tambah'." ]
 }
+
+@test "filter tag OR hanya menampilkan nasi atau mie" {
+  run bash -c 'makan-apa init >/dev/null 2>&1 && makan-apa daftar --tsv --tag nasi,mie'
+  [ "$status" -eq 0 ]
+  # Nasi Goreng Spesial, Mie Ayam Pangsit, Ayam Geprek Dada, Nasi Uduk Komplit.
+  [ "${#lines[@]}" -eq 4 ]
+  [[ ${lines[0]} == "Ayam Geprek Dada	"* ]]
+  [[ ${lines[1]} == "Mie Ayam Pangsit	"* ]]
+  [[ ${lines[2]} == "Nasi Goreng Spesial	"* ]]
+  [[ ${lines[3]} == "Nasi Uduk Komplit	"* ]]
+}
+
+@test "daftar juga memfilter budget" {
+  run bash -c 'makan-apa init >/dev/null 2>&1 && makan-apa daftar --tsv --budget 12rb'
+  [ "$status" -eq 0 ]
+  # harga_min <= 12000: Es Teh Manis, Kopi Susu Gula Aren, Mie Ayam Pangsit, Nasi Uduk Komplit.
+  [ "${#lines[@]}" -eq 4 ]
+  [[ ${lines[0]} == "Es Teh Manis	"* ]]
+  [[ ${lines[1]} == "Kopi Susu Gula Aren	"* ]]
+  [[ ${lines[2]} == "Mie Ayam Pangsit	"* ]]
+  [[ ${lines[3]} == "Nasi Uduk Komplit	"* ]]
+}
+
+@test "daftar --ketat tanpa --budget ditolak" {
+  run bash -c 'makan-apa daftar --ketat 2>&1 >/dev/null'
+  [ "$status" -eq 1 ]
+  [ "$output" = "makan-apa: --ketat membutuhkan --budget." ]
+}

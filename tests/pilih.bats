@@ -132,3 +132,46 @@ Jalankan 'makan-apa init' untuk data contoh atau 'makan-apa tambah NAMA --harga 
   [ "$status" -eq 1 ]
   [ "$output" = "makan-apa: MAKAN_APA_TANGGAL harus berformat YYYY-MM-DD dan tanggalnya valid." ]
 }
+
+@test "budget batas inklusif" {
+  mkdir -p "$MAKAN_APA_DATA_DIR"
+  printf 'A\t20000\t25000\tnasi\tx\nB\t20001\t25000\tnasi\ty\n' \
+    >"$MAKAN_APA_DATA_DIR/tempat.tsv"
+
+  # harga_min == budget lolos; harga_min == budget+1 tidak.
+  run bash -c 'makan-apa pilih --budget 20000 2>&1 >/dev/null'
+  [ "$status" -eq 0 ]
+  [[ $output == *"Kandidat: 1 dari 2 (tersaring: budget 1, tag 0, riwayat 0)"* ]]
+}
+
+@test "--ketat membandingkan harga_max di batas" {
+  mkdir -p "$MAKAN_APA_DATA_DIR"
+  printf 'A\t10000\t30000\tnasi\tx\nB\t10000\t30001\tnasi\ty\n' \
+    >"$MAKAN_APA_DATA_DIR/tempat.tsv"
+
+  run bash -c 'makan-apa pilih --budget 30000 --ketat 2>&1 >/dev/null'
+  [ "$status" -eq 0 ]
+  [[ $output == *"Kandidat: 1 dari 2 (tersaring: budget 1, tag 0, riwayat 0)"* ]]
+}
+
+@test "--ketat lebih sempit dari default" {
+  run bash -c 'makan-apa init >/dev/null 2>&1 && makan-apa pilih --budget 20rb 2>&1 >/dev/null'
+  [ "$status" -eq 0 ]
+  [[ $output == *"Kandidat: 8 dari 8 (tersaring: budget 0, tag 0, riwayat 0)"* ]]
+
+  # `pilih` mencatat ke riwayat, jadi riwayat dihapus di antara dua pengukuran
+  # supaya keduanya dibandingkan dari keadaan awal yang sama.
+  run bash -c 'makan-apa init --paksa >/dev/null 2>&1 && rm -f "$MAKAN_APA_DATA_DIR/riwayat.tsv" && makan-apa pilih --budget 20rb --ketat 2>&1 >/dev/null'
+  [ "$status" -eq 0 ]
+  [[ $output == *"Kandidat: 4 dari 8 (tersaring: budget 4, tag 0, riwayat 0)"* ]]
+}
+
+@test "filter tag hanya menampilkan tempat bertag itu" {
+  mkdir -p "$MAKAN_APA_DATA_DIR"
+  printf 'A\t10000\t20000\tkopi\tx\nB\t10000\t20000\tnasi\ty\n' \
+    >"$MAKAN_APA_DATA_DIR/tempat.tsv"
+
+  run bash -c 'makan-apa pilih --tag kopi 2>&1 >/dev/null'
+  [ "$status" -eq 0 ]
+  [[ $output == *"Kandidat: 1 dari 2 (tersaring: budget 0, tag 1, riwayat 0)"* ]]
+}

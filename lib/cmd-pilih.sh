@@ -4,6 +4,7 @@
 cmd_pilih() {
   # Urutan mengikuti kontrak 4.8: validasi, config, kunci, baca, hari_ini, saring.
   validasi_seed
+  siapkan_budget
   muat_config
   ambil_kunci x
   baca_tempat
