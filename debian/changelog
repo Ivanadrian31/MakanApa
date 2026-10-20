@@ -1,5 +1,9 @@
 makan-apa (0.1.0) unstable; urgency=medium
 
-  * Rilis awal: kerangka perintah, penyimpanan TSV, dan paket .deb.
+  * Rilis pertama.
+  * Perintah init, tambah, daftar, ubah, hapus, pilih, riwayat, impor.
+  * Filter budget (termasuk --ketat) dan tag.
+  * Riwayat dengan jendela 3 hari, --ulang, dan --dry-run.
+  * Paket .deb dengan halaman manual dan bash completion.
 
- -- Tim MakanApa <tim.makanapa@example.com>  Tue, 20 Oct 2026 09:00:00 +0700
+ -- Tim MakanApa <tim.makanapa@example.com>  Tue, 20 Oct 2026 12:00:00 +0700

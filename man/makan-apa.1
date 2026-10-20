@@ -1,100 +1,249 @@
-.TH MAKAN-APA 1 "2026-10-20" "makan-apa 0.1.0" "Perintah pengguna"
+.TH MAKAN\-APA 1 "2026-10-20" "makan-apa 0.1.0" "Perintah Pengguna"
 .SH NAME
-makan-apa \- pemilih tempat makan dengan riwayat dan filter
+makan\-apa \- pemilih tempat makan dengan riwayat dan filter
 .SH SYNOPSIS
 .B makan\-apa
 .I perintah
 .RI [ opsi ]
+.br
+.B makan\-apa
+.RB [ \-h | \-\-help | \-V | \-\-version ]
 .SH DESCRIPTION
 .B makan\-apa
-memilih satu tempat makan secara acak dari daftar TSV milik pengguna.
-Tempat yang sudah dipilih dalam beberapa hari terakhir tidak dipilih lagi.
-Data disimpan di direktori XDG pengguna dan boleh disunting dengan editor teks.
+mengingat daftar tempat makan, lalu memilih satu secara acak setelah
+menyaringnya dengan budget dan tag. Tempat yang dipilih dalam beberapa hari
+terakhir tidak muncul lagi, sehingga hasilnya tidak berulang.
+Jika semua kandidat tersaring habis, perintah menjelaskan penyebabnya dan
+menawarkan cara melonggarkan filter.
+.PP
+Data berupa berkas TSV di direktori XDG pengguna. Pemakaian tidak
+membutuhkan root.
+.PP
+Keluaran data ditulis ke stdout; ringkasan dan pesan ditulis ke stderr.
+Perintah
+.B pilih
+hanya menulis nama tempat ke stdout.
 .SH COMMANDS
 .TP
 .B init
-menyalin data contoh ke direktori data.
+Menyalin data contoh ke direktori data.
 .TP
-.B tambah
-menambah satu tempat beserta harga, tag, dan catatan.
+.BI tambah " NAMA"
+Menambah tempat baru.
 .TP
 .B daftar
-menampilkan daftar tempat sebagai tabel atau TSV.
+Menampilkan daftar tempat sebagai tabel.
 .TP
-.B ubah
-mengubah sebagian kolom sebuah tempat.
+.BI ubah " NAMA"
+Mengubah data satu tempat. Hanya kolom yang opsinya diberikan yang berubah.
 .TP
-.B hapus
-menghapus sebuah tempat tanpa konfirmasi.
+.BI hapus " NAMA"
+Menghapus satu tempat. Riwayat tidak tersentuh.
 .TP
 .B pilih
-memilih satu tempat secara acak dengan filter budget dan tag.
+Memilih satu tempat secara acak (perintah utama).
 .TP
 .B riwayat
-menampilkan riwayat pilihan.
+Menampilkan riwayat pilihan.
 .TP
-.B impor
-mengimpor daftar dari berkas TSV.
+.BI impor " BERKAS"
+Mengimpor daftar tempat dari berkas TSV.
+.PP
+Nama tempat adalah satu argumen. Nama yang diawali
+.B \-
+ditulis setelah
+.BR \-\- .
+Setiap perintah menerima
+.B \-\-help
+yang mencetak sintaks dan opsinya, lalu keluar dengan kode 0.
 .SH OPTIONS
+Opsi umum, berlaku di mana saja:
 .TP
-.B \-h, \-\-help
-menampilkan bantuan.
+.BR \-h ", " \-\-help
+Menampilkan bantuan.
 .TP
-.B \-V, \-\-version
-menampilkan versi.
+.BR \-V ", " \-\-version
+Menampilkan versi (satu baris).
+.SS init
 .TP
-.B \-\-budget HARGA
-batas harga, misalnya 25000, 25rb, 25k, atau 25.000.
+.B \-\-paksa
+Menimpa data yang sudah ada. Data lama hilang.
+.SS tambah
+.TP
+.BI \-\-harga " MIN" [\-\fIMAKS\fR]
+Harga, wajib. Satu nilai berarti MIN sama dengan MAKS.
+Format: 25000, 25rb, 25k, atau 25.000.
+.TP
+.BI \-\-tag " T" [,\fIT\fR...]
+Tag, dipisah koma. Huruf kecil, angka,
+.B \-
+atau
+.BR \_ ,
+maksimal 20 karakter per tag.
+.TP
+.BI \-\-catatan " C"
+Catatan bebas.
+.SS daftar
+.TP
+.BI \-\-tag " T" [,\fIT\fR...]
+Hanya tempat dengan salah satu tag ini.
+.TP
+.BI \-\-budget " HARGA"
+Batas harga.
 .TP
 .B \-\-ketat
-membandingkan harga tertinggi dengan budget, bukan harga terendah.
-.TP
-.B \-\-tag T
-hanya tempat yang memiliki salah satu tag tersebut.
-.TP
-.B \-\-hari N
-jendela riwayat dalam hari; 0 mengabaikan riwayat.
-.TP
-.B \-\-dry\-run
-menampilkan pilihan tanpa mencatat ke riwayat.
-.TP
-.B \-\-ulang
-mengganti pilihan terakhir hari ini.
+Membandingkan harga_max, bukan harga_min, dengan budget. Membutuhkan
+.BR \-\-budget .
 .TP
 .B \-\-tsv
-mencetak TSV tanpa header.
+Mencetak TSV tanpa header dan tanpa ringkasan. Filter tetap berlaku.
+.SS ubah
+.TP
+.BI \-\-nama\-baru " X"
+Nama baru. Tidak boleh sama dengan nama tempat lain.
+.TP
+.BI \-\-harga " MIN" [\-\fIMAKS\fR]
+Harga baru.
+.TP
+.BI \-\-tag " T" [,\fIT\fR...]
+Tag baru. String kosong mengosongkan tag.
+.TP
+.BI \-\-catatan " C"
+Catatan baru. String kosong mengosongkan catatan.
+.SS pilih
+.TP
+.BI \-\-budget " HARGA"
+Batas harga: 25000, 25rb, 25k, atau 25.000.
+.TP
+.B \-\-ketat
+Membandingkan harga_max dengan budget.
+.TP
+.BI \-\-tag " T" [,\fIT\fR...]
+Hanya tempat dengan salah satu tag ini.
+.TP
+.BI \-\-hari " N"
+Jendela riwayat dalam hari, 0 sampai 365. Nilai 0 mengabaikan riwayat.
+Menimpa konfigurasi.
+.TP
+.B \-\-dry\-run
+Menampilkan pilihan tanpa mencatat ke riwayat.
+.TP
+.B \-\-ulang
+Mengganti pilihan terakhir hari ini, bukan menambah baris baru.
+.SS riwayat
+.TP
+.BI \-\-hari " N"
+Menampilkan N hari kalender terakhir termasuk hari ini (bawaan 14).
+Nilai 0 berarti hanya hari ini.
+.TP
+.B \-\-semua
+Menampilkan seluruh riwayat. Tidak bisa dipakai bersama
+.BR \-\-hari .
+.SS impor
+.TP
+.B \-\-ganti
+Mengganti seluruh daftar dengan isi berkas. Tanpa opsi ini, tempat baru
+ditambahkan dan nama yang sudah ada dilewati.
 .SH FILES
 .TP
 .I ~/.local/share/makan-apa/tempat.tsv
-daftar tempat, lima kolom dipisah tab.
+Daftar tempat: lima kolom dipisah TAB (nama, harga_min, harga_max, tag,
+catatan). Baris diawali
+.B #
+adalah komentar.
 .TP
 .I ~/.local/share/makan-apa/riwayat.tsv
-riwayat pilihan, tanggal dan nama.
+Riwayat pilihan: dua kolom (tanggal YYYY-MM-DD, nama). Entri yang lebih tua
+dari 90 hari dipangkas saat menulis.
+.TP
+.I ~/.local/share/makan-apa/.kunci
+Berkas kunci untuk akses data.
 .TP
 .I ~/.config/makan-apa/config
-konfigurasi, misalnya riwayat_hari=3.
+Konfigurasi berformat kunci=nilai. Satu kunci dikenal:
+.B riwayat_hari
+(0 sampai 365), jendela riwayat bawaan.
+.PP
+Lokasi mengikuti XDG_DATA_HOME dan XDG_CONFIG_HOME. Riwayat tidak ikut
+diekspor oleh
+.BR "daftar \-\-tsv" .
 .SH ENVIRONMENT
 .TP
 .B MAKAN_APA_DATA_DIR
-mengganti direktori data.
+Direktori data. Bawaan: XDG_DATA_HOME/makan-apa, atau ~/.local/share/makan-apa.
 .TP
 .B MAKAN_APA_CONFIG_DIR
-mengganti direktori konfigurasi.
+Direktori konfigurasi. Bawaan: XDG_CONFIG_HOME/makan-apa, atau
+~/.config/makan-apa.
 .TP
 .B MAKAN_APA_TANGGAL
-memalsukan tanggal hari ini, format YYYY-MM-DD.
-.SH "EXIT STATUS"
-0 sukses, 1 pemakaian, 2 tidak ada kandidat, 3 data atau IO,
-4 data terkunci, 5 nama tidak ditemukan.
+Memalsukan tanggal hari ini, format YYYY-MM-DD. Berguna untuk demo dan tes.
+Bawaan: tanggal sistem pada zona Asia/Jakarta.
+.TP
+.B MAKAN_APA_SEED
+Bilangan bulat 0 sampai 2147483646 untuk pemilihan yang dapat diulang.
+Bawaan: acak.
+.TP
+.B MAKAN_APA_CONTOH
+Lokasi berkas data contoh. Bawaan: dicari otomatis.
+.TP
+.B MAKAN_APA_LIB
+Direktori pustaka lib. Bawaan: dicari otomatis.
+.SH EXIT STATUS
+.TP
+.B 0
+Sukses.
+.TP
+.B 1
+Kesalahan pemakaian atau validasi.
+.TP
+.B 2
+Tidak ada kandidat yang lolos filter.
+.TP
+.B 3
+Kesalahan data atau I/O.
+.TP
+.B 4
+Data terkunci (proses lain memakainya lebih dari 2 detik).
+.TP
+.B 5
+Nama tidak ditemukan (ubah, hapus).
 .SH EXAMPLES
+Menyalin data contoh, lalu memilih satu tempat:
 .PP
 .nf
 makan\-apa init
+makan\-apa pilih
+.fi
+.PP
+Menambah tempat dan memilih dengan budget dan tag:
+.PP
+.nf
 makan\-apa tambah "Nasi Goreng Spesial" \-\-harga 15rb\-25rb \-\-tag nasi
 makan\-apa pilih \-\-budget 20rb \-\-tag nasi,mie
+.fi
+.PP
+Melihat riwayat 7 hari terakhir, lalu mengganti pilihan hari ini:
+.PP
+.nf
 makan\-apa riwayat \-\-hari 7
+makan\-apa pilih \-\-ulang \-\-budget 20rb \-\-ketat
+.fi
+.PP
+Berbagi daftar dengan teman:
+.PP
+.nf
+makan\-apa daftar \-\-tsv > daftar\-makan.tsv
+makan\-apa impor daftar\-makan.tsv
 .fi
 .SH BUGS
-Laporkan di https://github.com/Ivanadrian31/MakanApa/issues
-.SH "SEE ALSO"
-.BR bash (1)
+Tidak ada filter jarak atau area. Nama non-ASCII dapat menggeser kolom tabel
+karena
+.B makan\-apa
+berjalan dengan LC_ALL=C. Data pengguna tidak dihapus saat paket dicopot;
+hapus manual dengan
+.IR "rm -rf ~/.local/share/makan-apa" .
+.SH SEE ALSO
+.BR bash (1),
+.BR flock (1),
+.BR man (1)
