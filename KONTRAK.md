@@ -143,6 +143,19 @@ tetap terjaga karena `load` dieksekusi ulang untuk tiap tes. Alasan memilih `mkt
 alih-alih `BATS_TMPDIR` polos: `BATS_TMPDIR` bersama seluruh berkas tes, sehingga data satu
 tes bisa bocor ke tes berikutnya.
 
+**P13 — `OPT_<NAMA>_DIBERI`: membedakan "opsi diberikan kosong" dari "opsi tidak diberikan"
+(disetujui pemilik rencana; diminta lewat issue #14).**
+`PLAN.md` §2.6 mewajibkan `ubah --catatan ""` **mengosongkan** catatan, sedangkan §8 (dan
+kontrak ini) menetapkan opsi yang tidak diberikan bernilai kosong. Keduanya menghasilkan
+`OPT_CATATAN=""`, sehingga `cmd_ubah` tidak bisa membedakannya — B4 terblokir. Alasan
+memilih penanda terpisah alih-alih mengubah nilai default: nilai default kosong dibutuhkan
+`set -u` dan sudah dipakai `cmd_tambah`/`cmd_daftar`; menambahkan penanda bersifat aditif dan
+tidak mengubah perilaku perintah yang ada. Dampak: `set_opsi` di `bin/makan-apa` mengisi
+`OPT_<NAMA>_DIBERI=1` setiap kali opsi bernilai diberikan, dan variabelnya dideklarasikan
+`0` di blok global. Berlaku untuk semua opsi bernilai: `--budget`, `--tag`, `--hari`,
+`--harga`, `--catatan`, `--nama-baru`. Opsi bendera (`--ketat`, `--dry-run`, …) tidak perlu
+penanda karena sudah `0`/`1`.
+
 ### 2.2 Klarifikasi aditif (menutup celah; wajib disetujui di PR kontrak pertama)
 
 `PLAN.md` tidak menentukan hal-hal berikut. Tanpa keputusan, dua implementasi akan berbeda
@@ -508,12 +521,15 @@ Catatan wajib:
 |`OPT_TAG`|bin|`''` atau `nasi,mie` (sudah divalidasi, urutan dipertahankan)|
 |`OPT_HARI`|bin|integer atau kosong|
 |`OPT_HARGA`, `OPT_CATATAN`, `OPT_NAMA_BARU`|bin|string atau kosong|
+|`OPT_BUDGET_DIBERI`, `OPT_TAG_DIBERI`, `OPT_HARI_DIBERI`, `OPT_HARGA_DIBERI`, `OPT_CATATAN_DIBERI`, `OPT_NAMA_BARU_DIBERI`|bin|`0`/`1`: 1 bila opsi itu benar-benar diberikan (P13)|
 |`NAMA_BERSIH`, `TAG_BERSIH`, `HARGA_NILAI`|fungsi validasi|hasil normalisasi|
 |`TEMPAT[]`, `TEMPAT_TOTAL`, `RIWAYAT[]`, `RIWAYAT_TOTAL`|data|baris ternormalisasi|
 |`KANDIDAT[]`, `KANDIDAT_TOTAL`, `GAGAL_BUDGET`, `GAGAL_TAG`, `GAGAL_RIWAYAT`, `SARAN_BUDGET`|saring|statistik|
 |`TMP`|bin|path berkas sementara untuk `trap`|
 
 Opsi yang tidak diberikan bernilai kosong/`0`, bukan `unset` — supaya `set -u` aman.
+Karena itu "diberikan dengan nilai kosong" (`--catatan ""`) dan "tidak diberikan" sama-sama
+menghasilkan string kosong; pembedaannya lewat `OPT_<NAMA>_DIBERI` (P13).
 
 ---
 
