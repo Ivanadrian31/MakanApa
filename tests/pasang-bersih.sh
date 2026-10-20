@@ -26,36 +26,53 @@ VERSI=${DEB#makan-apa_}
 VERSI=${VERSI%_all.deb}
 echo "pasang-bersih: $DEB di $IMG"
 
-docker run --rm -i \
+# Skrip dalam kontainer ditulis ke berkas lalu dibaca bash sebagai argumen, bukan
+# lewat stdin: apt-get membaca stdin dan akan memakan sisa heredoc.
+docker run --rm \
     -e DEBIAN_FRONTEND=noninteractive \
     -e DEB="$DEB" \
     -e VERSI="$VERSI" \
     -v "$PWD/dist:/deb:ro" \
-    "$IMG" bash -euo pipefail -s <<'EOS'
-apt-get update -qq
-apt-get install -y -qq "/deb/$DEB"
+    "$IMG" bash -euo pipefail -c "$(
+        cat <<'EOS'
+cek() { # cek <keterangan> <perintah...>
+    local keterangan=$1
+    shift
+    if "$@"; then
+        printf '  ok  %s\n' "$keterangan"
+    else
+        printf '  GAGAL %s\n' "$keterangan" >&2
+        return 1
+    fi
+}
 
-test "$(makan-apa --version)" = "makan-apa $VERSI"
-test -x /usr/bin/makan-apa
-test -f /usr/share/man/man1/makan-apa.1.gz
-test -f /usr/share/bash-completion/completions/makan-apa
+# apt-get tidak boleh membaca stdin skrip ini.
+apt-get update -qq </dev/null
+apt-get install -y -qq "/deb/$DEB" </dev/null
+
+cek "biner terpasang dan executable" test -x /usr/bin/makan-apa
+cek "man page terpasang" test -f /usr/share/man/man1/makan-apa.1.gz
+cek "completion terpasang" test -f /usr/share/bash-completion/completions/makan-apa
 for pustaka in umum harga data saring cmd-dasar cmd-pilih cmd-ubah cmd-impor cmd-riwayat; do
-    test -f "/usr/share/makan-apa/lib/$pustaka.sh"
+    cek "pustaka $pustaka.sh terpasang" test -f "/usr/share/makan-apa/lib/$pustaka.sh"
 done
+cek "isi contoh terpasang" test -f /usr/share/makan-apa/contoh.tsv
+cek "dokumentasi terpasang" test -f /usr/share/doc/makan-apa/copyright
+cek "versi sesuai nama paket" test "$(makan-apa --version)" = "makan-apa $VERSI"
 
-# Perintah belum di build ini dijawab "belum tersedia" (kontrak P5). Keadaan itu
-# boleh sampai A6, jadi demo dilewati untuk perintah itu saja; galat lain
-# tetap menggagalkan tes.
+# Perintah belum ada di build ini dijawab "belum tersedia" (kontrak P5). Keadaan itu
+# boleh sampai A6, jadi demo dilewati untuk perintah itu saja; galat lain tetap
+# menggagalkan tes.
 demo() {
     local perintah=$1 galat kod
     shift
     if galat=$(makan-apa "$perintah" "$@" 2>&1); then
-        printf '%s\n' "$galat"
+        printf '  demo %s -> %s\n' "$perintah" "$galat"
         return 0
     else
         kod=$?
         if [ "$kod" -eq 3 ] && [[ $galat == *"belum tersedia di build ini"* ]]; then
-            echo "  (lewati demo '$perintah': perintah belum tersedia di build ini)"
+            printf '  demo %s dilewati: perintah belum tersedia di build ini\n' "$perintah"
             return 0
         fi
         printf '%s\n' "$galat" >&2
@@ -69,13 +86,13 @@ demo init
 demo pilih --budget 20rb
 demo riwayat --hari 3
 if [ ! -f "$MAKAN_APA_DATA_DIR/tempat.tsv" ]; then
-    # init belum tersedia; buat data pengguna sendiri supaya pemeriksaan
-    # "data tetap setelah remove/purge" tetap teruji.
+    # init belum tersedia; buat data pengguna sendiri supaya pemeriksaan "data
+    # tetap setelah remove/purge" tetap teruji.
     printf 'Bakso Sapi Campur\t14000\t24000\tbakso,berkuah\tporsi jumbo\n' \
         >"$MAKAN_APA_DATA_DIR/tempat.tsv"
 fi
 chmod 700 "$MAKAN_APA_DATA_DIR"
-test -f "$MAKAN_APA_DATA_DIR/tempat.tsv"
+cek "data pengguna ada sebelum remove" test -f "$MAKAN_APA_DATA_DIR/tempat.tsv"
 
 # Terpasang bila dpkg melaporkan status "installed" (dpkg-query keluar != 0 setelah
 # remove/purge, jadi redirection ke /dev/null tidak cukup).
@@ -84,21 +101,25 @@ terpasang() {
 }
 
 # remove: biner hilang, data pengguna tetap
-apt-get remove -y -qq makan-apa
-test ! -e /usr/bin/makan-apa
-test -f "$MAKAN_APA_DATA_DIR/tempat.tsv"
-terpasang || { echo "pasang-bersih: paket masih terpasang setelah remove." >&2; exit 1; }
+apt-get remove -y -qq makan-apa </dev/null
+cek "biner hilang setelah remove" test ! -e /usr/bin/makan-apa
+cek "data tetap setelah remove" test -f "$MAKAN_APA_DATA_DIR/tempat.tsv"
+if terpasang; then
+    echo "pasang-bersih: paket masih terpasang setelah remove." >&2
+    exit 1
+fi
 
 # purge: paket tidak terpasang, data pengguna tetap
-apt-get purge -y -qq makan-apa
-test ! -e /usr/bin/makan-apa
-test -f "$MAKAN_APA_DATA_DIR/tempat.tsv"
+apt-get purge -y -qq makan-apa </dev/null
+cek "biner hilang setelah purge" test ! -e /usr/bin/makan-apa
+cek "data tetap setelah purge" test -f "$MAKAN_APA_DATA_DIR/tempat.tsv"
 if terpasang; then
     echo "pasang-bersih: paket masih terpasang setelah purge." >&2
     exit 1
 fi
-test ! -e /usr/share/makan-apa
+cek "berkas paket hilang setelah purge" test ! -e /usr/share/makan-apa
 echo "kontainer: remove dan purge lulus"
 EOS
+    )"
 
 echo "pasang-bersih: OK ($IMG, $DEB)"
