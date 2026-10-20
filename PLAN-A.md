@@ -1,7 +1,8 @@
 # PLAN-A — Orang A (`bimadji`)
 
 Inti skrip, penyimpanan, penyaringan, diagnosis, plus infrastruktur (Makefile, CI, helper
-tes) dan audit kasus tepi. Beban: **53,5 jam** (≈ 13 hari pada 4 jam/hari). A adalah
+tes) dan audit kasus tepi. Beban: **54,5 jam** (≈ 13–14 hari pada 4 jam/hari; naik 1 jam dari
+A2 yang sekarang membawa `muat_config`/`baca_riwayat`/`tulis_riwayat` — lihat A2). A adalah
 **kolaborator** di repo B (`Ivanadrian31/MakanApa`), bukan pemilik: A tidak mengubah
 pengaturan repo dan tidak push langsung ke `main`.
 
@@ -61,7 +62,8 @@ Ukuran: kecil ≈ 2–3 jam, sedang ≈ 5–7 jam, besar ≈ 9–12 jam.
   `make`/`bats`/`shellcheck` terpasang di mesin.
 - **Berkas:** tidak ada (hanya konfigurasi git lokal).
 - **Tes wajib:** tidak ada.
-- **Kriteria selesai:** `git push -u origin uji-akses` berhasil lalu branch dihapus;
+- **Kriteria selesai:** `git push -u origin uji-akses` berhasil lalu branch itu dihapus
+  (`uji-akses` satu-satunya pengecualian penghapusan branch, P10);
   `bats --version`, `shellcheck --version`, `make --version` keluar 0.
 - **Branch/PR/reviewer:** tidak ada PR (branch uji dihapus). Reviewer: — .
 - **Bisa dimulai sekarang karena:** A tidak butuh repo untuk menulis kode. Bila `main` atau
@@ -94,13 +96,19 @@ Ukuran: kecil ≈ 2–3 jam, sedang ≈ 5–7 jam, besar ≈ 9–12 jam.
   man, dan completion disalin dari kontrak (P4), bukan menunggu B. Perintah milik B
   dilayani `declare -F` (pesan "belum tersedia", P5).
 
-### A2 — `harga` + `init`/`tambah`/`daftar`/`hapus` (besar, 10 jam)
+### A2 — `harga` + `init`/`tambah`/`daftar`/`hapus` + fungsi riwayat (besar, 11 jam)
 
 - **Cakupan:** `parse_harga` (25000/25rb/25k/25.000/25RB), `format_harga`; validasi nama
   dan tag dipakai `tambah`/`daftar`; `cmd_init` (cari `contoh.tsv` 4 lokasi, `--paksa`),
   `cmd_tambah`, `cmd_daftar` (lebar kolom, potong `...`, `--tsv`, ringkasan stderr),
-  `cmd_hapus`.
-- **Berkas:** `lib/harga.sh`, `lib/cmd-dasar.sh`, `tests/tambah.bats`, `tests/daftar.bats`.
+  `cmd_hapus`; **`muat_config`, `baca_riwayat`, `tulis_riwayat` di `lib/data.sh`** — yang
+  tiga terakhir bukan pilihan, tapi prasyarat PR B2 yang sudah terbuka dan merah karena
+  `baca_riwayat` belum ada. KONTRAK §7 sudah mengikat tanda tangannya: `muat_config`
+  mengisi `RIWAYAT_HARI` (default 3, kunci asing → peringatan, nilai salah → keluar 3),
+  `baca_riwayat` mengisi `RIWAYAT[]`/`RIWAYAT_TOTAL` (2 kolom, lewati tanggal tidak valid
+  dan masa depan + peringatan), `tulis_riwayat` menulis atomik dan memangkas entri > 90 hari.
+- **Berkas:** `lib/harga.sh`, `lib/cmd-dasar.sh`, `lib/data.sh`, `tests/tambah.bats`,
+  `tests/daftar.bats`.
 - **Tes wajib (`tests/tambah.bats`, 8):** `tambah valid menyimpan lima kolom`,
   `tiga format harga setara`, `harga bertitik diterima`,
   `harga_min lebih besar dari harga_max ditolak`, `nama duplikat ditolak`,
@@ -108,12 +116,18 @@ Ukuran: kecil ≈ 2–3 jam, sedang ≈ 5–7 jam, besar ≈ 9–12 jam.
   `nama berawalan pagar ditolak`.
   **(`tests/daftar.bats`, 3):** `tabel terurut dan berisi delapan baris`,
   `--tsv mencetak lima kolom tanpa header`, `daftar kosong keluar 0 dengan pesan Belum ada data`.
+  **(`tests/tambah.bats`, 3 tambahan wajib — `tulis_tempat` sempat lolos tanpa tes di A1):**
+  `tambah mempertahankan komentar di tempat.tsv`, `tambah memperingatkan baris rusak dan
+  tetap menyimpan baris valid`, `tambah menangani CRLF di tempat.tsv`.
 - **Kriteria selesai:** `init` + `tambah` + `daftar` + `hapus` jalan di `MAKAN_APA_DATA_DIR`
   tmp; lebar kolom sama dengan contoh `PLAN.md` §2.5; `daftar --tsv | wc -l` = 8 setelah
-  `init`.
-- **Branch:** `a-2-perintah-dasar` · **PR:** #3 · **Reviewer:** B.
+  `init`; **`make check` hijau tanpa tes yang di-skip; `makan-apa riwayat` jalan tanpa galat
+  `baca_riwayat: command not found`** (prasyarat PR B2); tidak ada driver sementara yang
+  ikut ter-commit.
+- **Branch:** `a-2-perintah-dasar` · **PR:** #6 · **Reviewer:** B.
 - **Bisa dimulai sekarang karena:** `parse_harga` milik sendiri (P2); hanya butuh `bin` dan
-  `data` dari A1.
+  `data` dari A1. Melepas blokir PR B2 adalah tambahan gratis — tidak menambah ketergantungan
+  ke tahap lain.
 
 ### A3 — `saring` dasar + `cmd_pilih` (sedang, 6 jam)
 
@@ -213,7 +227,10 @@ Ukuran: kecil ≈ 2–3 jam, sedang ≈ 5–7 jam, besar ≈ 9–12 jam.
    review/CI: (a) jalankan `make check` + `make deb` lokal, (b) review PR B yang terbuka
    (`gh pr diff`), (c) tulis tes tahap berikutnya.
 4. Saat CI merah: perbaiki di branch yang sama, push ulang; jangan membuat branch baru.
-5. Saat titik temu: jalankan `make check && make deb && make lint` di `main` hasil merge,
+5. Setelah PR merge: `git switch main && git pull --ff-only`, lalu branch baru untuk tahap
+   berikutnya. **Branch lama tidak dihapus dan tidak dipakai ulang** (P10); perbaikan susulan
+   memakai branch baru, mis. `a-1-kerangka-perbaikan`.
+6. Saat titik temu: jalankan `make check && make deb && make lint` di `main` hasil merge,
    catat hasilnya di komentar PR.
 
 ## 5. Stub dan data palsu
@@ -251,7 +268,7 @@ git config user.name "bimadji" && git config user.email "<email-A>"
 git switch -c uji-akses
 git commit --allow-empty -m "uji akses"
 git push -u origin uji-akses            # harus berhasil; bila 403, minta B mengundang
-git push origin --delete uji-akses
+git push origin --delete uji-akses       # satu-satunya branch yang boleh dihapus (P10)
 git switch main
 ```
 
@@ -279,8 +296,8 @@ git push -u origin a-2-perintah-dasar
 gh pr create --base main --title "A2: perintah dasar (init/tambah/daftar/hapus)" \
   --body "Cakupan: ... | Tes: tests/tambah.bats (8), tests/daftar.bats (3) | make check: hijau lokal"
 gh pr checks --watch
-gh pr merge --squash --delete-branch
-git switch main && git pull --ff-only
+gh pr merge --squash                       # tanpa --delete-branch (P10)
+git switch main && git pull --ff-only      # branch lama dibiarkan di remote
 ```
 
 Review PR B (silang):
@@ -289,7 +306,7 @@ Review PR B (silang):
 gh pr checkout 4
 make check && make deb
 gh pr review 4 --approve --body "Diperiksa: string kontrak §5.4, tes 5 kasus, make check hijau"
-gh pr merge 4 --squash --delete-branch
+gh pr merge 4 --squash                     # tanpa --delete-branch (P10)
 ```
 
 Verifikasi proteksi (B yang memasang, A hanya memeriksa; B adalah pemilik repo):
