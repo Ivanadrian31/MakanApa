@@ -78,18 +78,22 @@ Es Kelapa	5000	9000	minuman	dingin
     >"$MAKAN_APA_DATA_DIR/tempat.tsv"
   cp "$MAKAN_APA_DATA_DIR/tempat.tsv" "$MAKAN_APA_DATA_DIR/sebelum.tsv"
 
-  # Lima baris valid, lalu baris ke-7 hanya 4 kolom.
+  # Lima baris valid (1-5); baris 6 hanya 4 kolom, baris 7 valid, baris 8 harga rusak.
   printf 'Soto Betawi	18000	25000	sup,daging	kuah santan
 Rawon	20000	28000	sup	kuah hitam
 Gado-Gado	10000	15000	sayur,kacang	bumbu kacang
 Sate Padang	15000	22000	sate,pedas	kuah kental
 Es Kelapa	5000	9000	minuman	dingin
 ' >"$MAKAN_APA_DATA_DIR/impor.tsv"
-  printf 'Rusak Tanpa Kolom\t9000\t12000\tsalah\n' >>"$MAKAN_APA_DATA_DIR/impor.tsv"
+  {
+    printf 'Rusak Tanpa Kolom\t9000\t12000\tsalah\n'
+    printf 'Baris Ketujuh\t7000\t9000\tminuman\tvalid\n'
+    printf 'Harga Rusak\txx\t9000\tminuman\tsalah\n'
+  } >>"$MAKAN_APA_DATA_DIR/impor.tsv"
 
   run bash -c 'makan-apa impor "$1" 2>&1 >/dev/null' _ "$MAKAN_APA_DATA_DIR/impor.tsv"
   [ "$status" -eq 3 ]
-  [ "$output" = 'makan-apa: berkas impor tidak valid pada baris 7. Tidak ada data yang diubah.' ]
+  [ "$output" = 'makan-apa: berkas impor tidak valid pada baris 6, 8. Tidak ada data yang diubah.' ]
 
   # Tidak ada satu baris pun yang ditulis.
   run cmp "$MAKAN_APA_DATA_DIR/sebelum.tsv" "$MAKAN_APA_DATA_DIR/tempat.tsv"
