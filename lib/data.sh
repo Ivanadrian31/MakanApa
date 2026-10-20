@@ -81,3 +81,91 @@ tulis_tempat() {
   } | tulis_atomik "$FILE_TEMPAT" ||
     die "gagal menulis $FILE_TEMPAT." 3
 }
+
+# Baca config -> RIWAYAT_HARI. Berkas tidak ada = nilai default (kontrak 6.3).
+muat_config() {
+  # shellcheck disable=SC2034 # diisi untuk dibaca pemanggil (kontrak 7/8)
+  RIWAYAT_HARI=3
+  [ -f "$FILE_CONFIG" ] || return 0
+  local baris kunci nilai
+  while IFS= read -r baris || [ -n "$baris" ]; do
+    baris=${baris%$'\r'}
+    case $(pangkas "$baris") in
+      '' | '#'*) continue ;;
+    esac
+    kunci=$(pangkas "${baris%%=*}")
+    nilai=$(pangkas "${baris#*=}")
+    case $kunci in
+      riwayat_hari)
+        case $nilai in
+          '' | *[!0-9]*) die "nilai \"$nilai\" untuk riwayat_hari tidak valid (0-365)." 3 ;;
+        esac
+        if [ "$((10#$nilai))" -gt 365 ]; then
+          die "nilai \"$nilai\" untuk riwayat_hari tidak valid (0-365)." 3
+        fi
+  # shellcheck disable=SC2034 # diisi untuk dibaca pemanggil (kontrak 7/8)
+        RIWAYAT_HARI=$((10#$nilai))
+        ;;
+      *) peringatan "kunci konfigurasi \"$kunci\" tidak dikenal." ;;
+    esac
+  done <"$FILE_CONFIG"
+}
+
+# Baca riwayat.tsv -> RIWAYAT[] (tanggal<TAB>nama) + RIWAYAT_TOTAL. HARI_INI harus sudah
+# diisi pemanggil. Tanggal tidak valid dan masa depan dilewati tanpa menghapus berkas.
+baca_riwayat() {
+  # shellcheck disable=SC2034 # diisi untuk dibaca pemanggil (kontrak 7/8)
+  RIWAYAT=()
+  RIWAYAT_TOTAL=0
+  [ -f "$FILE_RIWAYAT" ] || return 0
+  local baris n=0 masa_depan=0 tanggal nama
+  while IFS= read -r baris || [ -n "$baris" ]; do
+    n=$((n + 1))
+    baris=${baris%$'\r'}
+    case $(pangkas "$baris") in
+      '' | '#'*) continue ;;
+    esac
+    pecah_kolom "$baris"
+    if [ "${#KOLOM[@]}" -ne 2 ]; then
+      peringatan "baris $n riwayat rusak (${#KOLOM[@]} kolom, seharusnya 2) - dilewati."
+      continue
+    fi
+    tanggal=$(pangkas "${KOLOM[0]}")
+    nama=$(pangkas "${KOLOM[1]}")
+    if ! tanggal_valid "$tanggal"; then
+      peringatan "baris $n riwayat rusak (tanggal tidak valid) - dilewati."
+      continue
+    fi
+    if [[ $tanggal > $HARI_INI ]]; then
+      masa_depan=$((masa_depan + 1))
+      continue
+    fi
+    RIWAYAT+=("$tanggal"$'\t'"$nama")
+  # shellcheck disable=SC2034 # diisi untuk dibaca pemanggil (kontrak 7/8)
+    RIWAYAT_TOTAL=$((RIWAYAT_TOTAL + 1))
+  done <"$FILE_RIWAYAT"
+  if [ "$masa_depan" -gt 0 ]; then
+    peringatan "$masa_depan baris riwayat bertanggal masa depan diabaikan."
+  fi
+}
+
+# stdin (baris tanggal<TAB>nama) -> riwayat.tsv, atomik; entri > 90 hari dipangkas.
+tulis_riwayat() {
+  local batas tanggal nama baris
+  batas=$(tanggal_minus 90)
+  {
+    printf '# riwayat makan-apa - silakan diedit\n'
+    printf '# tanggal<TAB>nama\n'
+    while IFS= read -r baris || [ -n "$baris" ]; do
+      baris=${baris%$'\r'}
+      pecah_kolom "$baris"
+      [ "${#KOLOM[@]}" -eq 2 ] || continue
+      tanggal=$(pangkas "${KOLOM[0]}")
+      nama=$(pangkas "${KOLOM[1]}")
+      tanggal_valid "$tanggal" || continue
+      if [[ $tanggal < $batas ]]; then continue; fi
+      printf '%s\t%s\n' "$tanggal" "$nama"
+    done
+  } | tulis_atomik "$FILE_RIWAYAT" ||
+    die "gagal menulis $FILE_RIWAYAT." 3
+}

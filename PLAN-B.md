@@ -195,7 +195,13 @@ dengan alasan, A yang mengubah (satu baris, PR kecil).
    PR A untuk review, baca ulang kontrak §5 untuk string, siapkan fixture tes.
 6. Bila `bats` merah karena modul A belum ada: jangan mengubah implementasi atau tes menjadi
    longgar; tunggu merge A yang relevan, lanjut tahap berikutnya.
-7. Saat titik temu: jalankan `make check && make deb && make lint` di `main`.
+7. Setelah PR merge: `git switch main && git pull --ff-only`, lalu `git switch -c <branch
+   baru>`. **Branch lama tidak dihapus dan tidak dipakai ulang** (P10); perbaikan susulan
+   memakai branch baru, mis. `b-1-paket-perbaikan`. Dilarang `git push origin --delete
+   <branch>` dan `git branch -d/-D` untuk branch tahap — satu-satunya pengecualian adalah
+   branch uji `uji-akses` di A0. Pengaturan repo `delete_branch_on_merge` dikunci `false`
+   supaya GitHub tidak menghapus branch otomatis (perintah di §7).
+8. Saat titik temu: jalankan `make check && make deb && make lint` di `main`.
 
 ## 5. Stub dan data palsu
 
@@ -220,6 +226,22 @@ diharapkan (kontrak §12.1) dan bukan alasan menambah stub.
 
 ## 7. Langkah Git praktis
 
+Aturan branch yang mengikat semua perintah di bawah (kontrak P10):
+
+- Branch tahap **tidak dihapus** setelah PR di-merge; seluruhnya dipertahankan di remote
+  sebagai riwayat kerja.
+- Merge selalu `gh pr merge <nomor> --squash` **tanpa** opsi hapus branch.
+- Dilarang `git push origin --delete <branch>` dan `git branch -d/-D` untuk branch tahap.
+  Satu-satunya pengecualian: branch uji `uji-akses` di A0.
+- Setelah merge: `git switch main && git pull --ff-only`, lalu branch baru. Branch lama
+  tidak pernah dipakai ulang; perbaikan susulan memakai branch baru.
+- GitHub juga menghapus branch otomatis bila pengaturan repo menyalakannya, jadi nilainya
+  dikunci `false` dan diperiksa ulang setiap sesi:
+
+  ```bash
+  gh api repos/Ivanadrian31/MakanApa --jq '.delete_branch_on_merge'   # harus: false
+  ```
+
 B0 (sekali, B pemilik): seed `main`, undang A, siapkan proteksi.
 
 ```bash
@@ -232,6 +254,10 @@ git push -u origin main
 
 gh api -X PUT "repos/Ivanadrian31/MakanApa/collaborators/bimadji" -f permission=push
 gh api "repos/Ivanadrian31/MakanApa/collaborators" --jq '.[].login'
+
+# kunci P10: branch tidak boleh terhapus otomatis saat PR di-merge
+gh api -X PATCH repos/Ivanadrian31/MakanApa -f delete_branch_on_merge=false
+gh api repos/Ivanadrian31/MakanApa --jq '.delete_branch_on_merge'
 ```
 
 Setelah #1 merge (CI sudah berjalan sekali sehingga nama check terdaftar):
@@ -257,7 +283,7 @@ git push -u origin b-3-impor
 gh pr create --base main --title "B3: impor TSV (validasi menyeluruh, --ganti)" \
   --body "Cakupan: ... | Tes: tests/impor.bats (4) | make check: hijau lokal setelah #3"
 gh pr checks --watch
-gh pr merge --squash --delete-branch
+gh pr merge --squash          # tanpa opsi hapus branch: branch dipertahankan (P10)
 git switch main && git pull --ff-only
 ```
 
@@ -284,7 +310,7 @@ Review PR A (silang):
 gh pr checkout 3
 make check && make deb
 gh pr review 3 --approve --body "Diperiksa: string kontrak §5, tes 8+3 kasus, lebar kolom"
-gh pr merge 3 --squash --delete-branch
+gh pr merge 3 --squash        # tanpa opsi hapus branch: branch A dipertahankan (P10)
 ```
 
 Rilis (setelah #11 hijau):
@@ -318,3 +344,4 @@ gh release create v0.1.0 dist-ci/makan-apa_0.1.0_all.deb \
 |A belum menerima undangan sehingga #1 tidak bisa di-push|B0 mengundang `bimadji` di hari pertama dan memverifikasi lewat `gh api .../collaborators`; A punya jalur fork|
 |Proteksi dipasang sebelum nama status check terdaftar (tidak bisa dipilih)|pasang proteksi setelah #1 merge (CI sudah jalan sekali), bukan di B0|
 |B0 menahan A1 karena `main` belum ada|B0 selesai ± 15 menit di H1; A menulis kode di clone lokal lebih dulu, jadi tidak menganggur|
+|Branch terhapus otomatis saat PR di-merge sehingga riwayat kerja hilang -> cek `delete_branch_on_merge=false`|`gh api repos/Ivanadrian31/MakanApa --jq '.delete_branch_on_merge'` harus `false` (bagian 7); bila `true`, kembalikan dengan `gh api -X PATCH repos/Ivanadrian31/MakanApa -f delete_branch_on_merge=false`; merge tanpa opsi hapus branch; `git push origin --delete` dan `git branch -d/-D` dilarang untuk branch tahap (P10)|

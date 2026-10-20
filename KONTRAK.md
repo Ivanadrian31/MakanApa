@@ -26,7 +26,7 @@ yang dikutip dari `PLAN.md` §2.11.
 | Tes | `tests/cli.bats`, `tests/tambah.bats`, `tests/daftar.bats`, `tests/pilih.bats`, `tests/data.bats` (38 kasus) | `tests/riwayat.bats`, `tests/impor.bats`, `tests/ubah.bats` (23 kasus) |
 | Dokumen | `KONTRAK.md`, `PLAN-A.md` | `README.md`, `CHANGELOG.md`, `LICENSE`, `PLAN-B.md` |
 | Tugas admin repo | verifikasi proteksi, review | seed `main`, undang kolaborator, proteksi branch, tag rilis |
-| Beban | 53,5 jam | 51 jam |
+| Beban | 54,5 jam | 51 jam |
 
 **Invarian ketergantungan kode: B → A saja.** Tidak ada modul milik A yang memanggil fungsi
 milik B. Dispatch di `bin/makan-apa` memanggil `cmd_*` milik B lewat nama (dijaga
@@ -106,6 +106,42 @@ tetap `harga_min` terkecil pada mode default. Teks dan format `4rb` tidak beruba
 Dampak: `cetak_diagnosa` (A) memilih field sesuai `OPT_KETAT`; variabel hasil `saring`
 bernama `SARAN_BUDGET` (menggantikan `SARAN_BUDGET_MIN`, kontrak §7); satu tes tambahan
 di A5.
+
+**P10 — Branch tahap tidak dihapus setelah merge (disetujui pemilik rencana).**
+Dulu langkah 7 alur Git menghapus branch setelah merge. Alasan perubahan: riwayat kerja
+per tahap tetap terlihat di remote sehingga mudah ditelusuri saat review atau bila perlu
+menelusuri ulang; menghapus branch menghilangkan bukti yang tidak selalu ada di commit squash.
+Dampak: (a) `gh pr merge <nomor> --squash` dipakai tanpa opsi hapus branch; (b)
+`git push origin --delete <branch>` dan `git branch -d/-D` dilarang untuk branch tahap,
+satu-satunya pengecualian branch uji `uji-akses` di A0; (c) branch lama tidak dipakai ulang,
+perbaikan susulan memakai branch baru (mis. `a-1-kerangka-perbaikan`); (d) sekitar 14 branch
+menumpuk di remote — tidak mengganggu CI karena CI hanya berjalan untuk PR dan push ke
+`main`; (e) reviewer harus memeriksa bahwa branch PR tidak ikut terhapus.
+
+**P11 — Fungsi riwayat (`muat_config`, `baca_riwayat`, `tulis_riwayat`) naik ke A2, dan
+tesnya wajib (disetujui pemilik rencana).**
+A1 hanya mengirim `baca_tempat`/`tulis_tempat`; akibatnya PR B2 (#3) terbuka dan merah karena
+`cmd_riwayat` memanggil `baca_riwayat` yang belum ada — satu tahap B tersendat oleh
+kelewatan A. Alasan pemindahan ke A2: `lib/data.sh` milik A, tanda tangannya sudah
+mengikat di KONTRAK §7, dan menambahkannya di A2 tidak menambah ketergantungan baru (punya
+sendiri, bukan menunggu B). Dampak: (a) A2 naik 1 jam (10 → 11); (b) PR B2 cukup rebase
+setelah A2 merge; (c) `tulis_tempat` yang sejak A1 tidak pernah punya tes kini wajib diuji —
+`tambah mempertahankan komentar di tempat.tsv`,
+`tambah memperingatkan baris rusak dan tetap menyimpan baris valid`, dan
+`tambah menangani CRLF di tempat.tsv` — karena `cmd_tambah` membuat parser terjangkau lewat
+CLI; (d) berkas sementara untuk driver tes tidak boleh ikut ter-commit.
+
+**P12 — `tests/helper.bash` memakai direktori sementara yang benar di bats 1.2 (disetujui
+pemilik rencana).**
+§9 membekukan helper dengan `$BATS_TEST_TMPDIR`. Variabel itu baru tersedia sejak bats 1.4;
+di bats 1.2 (Ubuntu 22.04) masih kosong ketika helper di-`load`, sehingga
+`MAKAN_APA_DATA_DIR` menjadi `/data` dan setiap tes yang menyentuh data gagal dengan kode
+keluar 3. Akar masalahnya bukan tes A2, melainkan kontrak §11 langkah 4 (CI wajib hijau di
+24.04 **dan** 22.04) bertentangan dengan isi §9. Dampak: helper memakai `BATS_TEST_TMPDIR`
+bila ada, selain itu direktori unik dari `mktemp -d` di dalam `BATS_TMPDIR`; isolasi per tes
+tetap terjaga karena `load` dieksekusi ulang untuk tiap tes. Alasan memilih `mktemp -d`
+alih-alih `BATS_TMPDIR` polos: `BATS_TMPDIR` bersama seluruh berkas tes, sehingga data satu
+tes bisa bocor ke tes berikutnya.
 
 ### 2.2 Klarifikasi aditif (menutup celah; wajib disetujui di PR kontrak pertama)
 
@@ -488,8 +524,17 @@ Opsi yang tidak diberikan bernilai kosong/`0`, bukan `unset` — supaya `set -u`
 - `tests/helper.bash` (A1, beku):
 
 ```bash
-export MAKAN_APA_DATA_DIR="$BATS_TEST_TMPDIR/data"
-export MAKAN_APA_CONFIG_DIR="$BATS_TEST_TMPDIR/config"
+# BATS_TEST_TMPDIR baru ada sejak bats 1.4; di bats 1.2 (22.04) masih kosong saat
+# helper dimuat, sehingga $BATS_TEST_TMPDIR/data menjadi /data (P12).
+if [ -n "${BATS_TEST_TMPDIR:-}" ]; then
+  _bats_tmp=$BATS_TEST_TMPDIR
+elif [ -n "${BATS_TMPDIR:-}" ]; then
+  _bats_tmp=$(mktemp -d "${BATS_TMPDIR:-/tmp}/makan-apa-XXXXXX")
+else
+  _bats_tmp=$(mktemp -d)
+fi
+export MAKAN_APA_DATA_DIR="$_bats_tmp/data"
+export MAKAN_APA_CONFIG_DIR="$_bats_tmp/config"
 export MAKAN_APA_TANGGAL=2026-10-20
 export MAKAN_APA_SEED=42
 export PATH="$BATS_TEST_DIRNAME/../bin:$PATH"
@@ -551,8 +596,12 @@ Berlaku untuk kode, tes, dokumen, salah ketik, dan perubahan kontrak.
    reviewer (orang yang tidak menulisnya). A mereview PR B; B mereview PR A.
 6. Merah → perbaiki di branch yang sama, push ulang. Dilarang merge dengan CI merah,
    `--no-verify`, push langsung ke `main`, atau force-push ke `main`.
-7. Setelah merge: hapus branch, `git switch main && git pull --ff-only` sebelum branch
-   berikutnya.
+7. Setelah merge: **branch tahap TIDAK dihapus** (P10) — `gh pr merge <nomor> --squash`
+   tanpa opsi hapus branch. Lalu `git switch main && git pull --ff-only` dan buat branch
+   baru dari `main`; branch lama tidak dipakai ulang, dan perbaikan susulan memakai branch
+   baru (mis. `a-1-kerangka-perbaikan`). Dilarang `git push origin --delete <branch>` dan
+   `git branch -d/-D` untuk branch tahap; satu-satunya pengecualian adalah branch uji
+   `uji-akses` di A0.
 
 Tambahan mengikat:
 
@@ -640,7 +689,7 @@ memverifikasi aksesnya:
 ```bash
 git clone https://github.com/Ivanadrian31/MakanApa.git
 git switch -c uji-akses && git commit --allow-empty -m "uji akses" && git push -u origin uji-akses
-git push origin --delete uji-akses
+git push origin --delete uji-akses   # satu-satunya branch yang boleh dihapus (P10)
 ```
 
 Bila undangan belum diterima, A **tidak menunggu**: A mengerjakan A1 di clone lokal (kode
@@ -824,9 +873,14 @@ menghambat mulai kerja.
 |2|Klarifikasi K1–K14|**Disetujui** semuanya|§2.2 tetap; `PLAN.md` tidak diubah|
 |3|Saran `--budget` pada `--ketat`|**Disesuaikan**: `X` = `harga_max` terkecil pada `--ketat`, `harga_min` pada mode default|P9 baru; §5.7 dan §7 diperbarui; `SARAN_BUDGET_MIN` → `SARAN_BUDGET`; tes tambahan di A5|
 |4|`make deb` menjalankan `make check` dua kali di CI|**Diterima**|tidak ada perubahan|
-|5|Beban kerja|**Diterima**: A 53,5 jam vs B 51 jam (4,7%)|A0 mengecil jadi 0,5 jam (clone + verifikasi akses); B0 baru 2 jam (seed, undang, proteksi)|
+|5|Beban kerja|**Diterima**: A 54,5 jam vs B 51 jam (6,8%)|A0 mengecil jadi 0,5 jam (clone + verifikasi akses); B0 baru 2 jam (seed, undang, proteksi); A2 naik 1 jam karena membawa `muat_config`/`baca_riwayat`/`tulis_riwayat` + 3 tes parser (P11)|
 |6|`MAKAN_APA_LIB` (K11)|**Disesuaikan/disetujui**: variabel resmi, dipakai `bin/makan-apa` untuk menemukan `lib/`|K11 tetap; §6.2 memuatnya|
 |7|Siapa A, siapa B?|**A = `bimadji`** (inti skrip), **B = `Ivanadrian31`** (paket, dokumen, pemilik repo)|§1 tabel akun; B0 memuat tugas admin; A7 tidak lagi memuat tugas admin|
+|8|Branch tahap dihapus setelah merge?|**Tidak** (P10): branch dipertahankan sebagai riwayat kerja; hanya `uji-akses` (A0) boleh dihapus|§11 langkah 7 ditulis ulang; contoh `gh pr merge` di `PLAN-A.md` §7 memakai opsi hapus branch|
+|9|Job `pasang` kapan jadi wajib?|Tetap `continue-on-error: true` sampai B1 (PR #2) merge; **A** menghapus flag itu di A6, lalu **B** menambahkan `pasang` ke status check wajib di proteksi branch (A tidak mengubah proteksi, cukup meminta lewat komentar PR A6)|`ci.yml` A6; permintaan ke B di deskripsi PR A6|
+|10|Komentar di `tempat.tsv`?|Cukup dikumpulkan di atas untuk 0.1.0; posisi asli tidak dipertahankan. B diminta menambahkannya ke bagian "Keterbatasan" README di PR B1|`tulis_tempat` tidak berubah; keterbatasan didokumentasikan|
+|11|Tes `tulis_tempat` kapan ditulis?|**WAJIB di A2**, bukan menunggu A6. `tulis_tempat` sudah ada sejak A1 dan sempat lolos tanpa tes karena tidak terjangkau dari CLI; sekarang `cmd_tambah` dibuat, jadi parser bisa diuji lewat CLI: `tambah mempertahankan komentar di tempat.tsv`, `tambah memperingatkan baris rusak dan tetap menyimpan baris valid`, `tambah menangani CRLF di tempat.tsv`|P11 baru; `PLAN-A.md` A2 berkembang (+1 jam); driver sementara tidak boleh ikut ter-commit|
+|12|Helper tes memakai `BATS_TEST_TMPDIR`|**Tidak** — variabel itu belum ada di bats 1.2 (22.04) sehingga `MAKAN_APA_DATA_DIR` menjadi `/data` dan semua tes data gagal. Helper memakai `BATS_TEST_TMPDIR` bila ada, selain itu `mktemp -d` di `BATS_TMPDIR` (P12)|§9 diperbarui; `tests/helper.bash` diganti di PR A2|
 
 Keputusan ini adalah bagian dari kontrak: mengubahnya butuh PR kontrak baru yang disetujui
 kedua orang, sama seperti bagian lain dokumen ini.
