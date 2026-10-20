@@ -154,7 +154,6 @@ tulis_riwayat() {
   local batas tanggal nama baris
   batas=$(tanggal_minus 90)
   {
-    printf '# riwayat makan-apa - silakan diedit\n'
     printf '# tanggal<TAB>nama\n'
     while IFS= read -r baris || [ -n "$baris" ]; do
       baris=${baris%$'\r'}
