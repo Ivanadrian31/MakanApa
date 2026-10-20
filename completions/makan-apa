@@ -1,7 +1,84 @@
-# bash completion untuk makan-apa
+# shellcheck shell=bash
+# bash completion untuk makan-apa 0.1.0
+# Terpasang di /usr/share/bash-completion/completions/makan-apa
+
 _makan_apa() {
-  local cur=${COMP_WORDS[COMP_CWORD]}
-  local perintah="init tambah daftar ubah hapus pilih riwayat impor"
-  mapfile -t COMPREPLY < <(compgen -W "$perintah" -- "$cur")
+    local cur prev cmd w i opsi
+    local perintah="init tambah daftar ubah hapus pilih riwayat impor"
+
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev=""
+    if (( COMP_CWORD > 0 )); then
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+    fi
+
+    # Cari perintah, dan berhenti bila ada "--" sebelum kursor
+    # (sesudah "--" hanya nama tempat, tidak ada saran).
+    cmd=""
+    for (( i = 1; i < COMP_CWORD; i++ )); do
+        w="${COMP_WORDS[i]}"
+        if [[ "$w" == "--" ]]; then
+            return 0
+        fi
+        if [[ -z "$cmd" ]]; then
+            case "$w" in
+                init|tambah|daftar|ubah|hapus|pilih|riwayat|impor)
+                    cmd="$w"
+                    ;;
+            esac
+        fi
+    done
+
+    # Opsi yang meminta nilai: nilainya bebas, tidak ada saran.
+    case "$prev" in
+        --budget|--harga|--tag|--catatan|--nama-baru|--hari)
+            return 0
+            ;;
+    esac
+
+    # Belum ada perintah: sarankan perintah atau opsi global.
+    if [[ -z "$cmd" ]]; then
+        if [[ "$cur" == -* ]]; then
+            opsi="-h --help -V --version"
+        else
+            opsi="$perintah"
+        fi
+        mapfile -t COMPREPLY < <(compgen -W "$opsi" -- "$cur")
+        return 0
+    fi
+
+    case "$cmd" in
+        init)    opsi="--paksa" ;;
+        tambah)  opsi="--harga --tag --catatan" ;;
+        daftar)  opsi="--tag --budget --ketat --tsv" ;;
+        ubah)    opsi="--nama-baru --harga --tag --catatan" ;;
+        hapus)   opsi="" ;;
+        pilih)   opsi="--budget --ketat --tag --hari --dry-run --ulang" ;;
+        riwayat) opsi="--hari --semua" ;;
+        impor)   opsi="--ganti" ;;
+    esac
+    opsi="$opsi -h --help"
+
+    if [[ "$cur" == -* ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "$opsi" -- "$cur")
+        return 0
+    fi
+
+    case "$cmd" in
+        impor)
+            # argumen posisional: berkas TSV
+            mapfile -t COMPREPLY < <(compgen -f -- "$cur")
+            compopt -o filenames 2>/dev/null || true
+            ;;
+        init|daftar|pilih|riwayat)
+            # tanpa argumen posisional: tawarkan opsi saat kursor kosong
+            if [[ -z "$cur" ]]; then
+                mapfile -t COMPREPLY < <(compgen -W "$opsi" -- "")
+            fi
+            ;;
+    esac
+    return 0
 }
+
 complete -F _makan_apa makan-apa
