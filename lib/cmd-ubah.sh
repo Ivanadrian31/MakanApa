@@ -5,9 +5,7 @@
 # Ubah satu baris tempat.tsv (kontrak 2.6, K7).
 # Hanya kolom yang opsinya DIBERIKAN yang berubah; `--catatan ""` dan `--tag ""`
 # mengosongkan kolom. "Diberikan" dibedakan dari "tidak diberikan" lewat
-# OPT_<NAMA>_DIBERI (issue #14): nilai kosong tidak bisa membedakan keduanya.
-# Opsi yang tidak kosong selalu dianggap diberikan, jadi tanpa penanda itu
-# pun semua kasus selain `--catatan ""`/`--tag ""` sudah benar.
+# OPT_<NAMA>_DIBERI (P13, kontrak 8): nilai kosong tidak bisa membedakan keduanya.
 cmd_ubah() {
   # Arity 1 (kontrak 4.2); kurang/lebih adalah galat pemakaian (K1).
   if [ "$#" -eq 0 ]; then
@@ -18,14 +16,10 @@ cmd_ubah() {
   fi
   validasi_nama "$1"
   local lama=$NAMA_BERSIH baru
-  local ada_nama=${OPT_NAMA_BARU_DIBERI:-0}
-  local ada_harga=${OPT_HARGA_DIBERI:-0}
-  local ada_tag=${OPT_TAG_DIBERI:-0}
-  local ada_catatan=${OPT_CATATAN_DIBERI:-0}
-  [ -n "$OPT_NAMA_BARU" ] && ada_nama=1
-  [ -n "$OPT_HARGA" ] && ada_harga=1
-  [ -n "$OPT_TAG" ] && ada_tag=1
-  [ -n "$OPT_CATATAN" ] && ada_catatan=1
+  local ada_nama=$OPT_NAMA_BARU_DIBERI
+  local ada_harga=$OPT_HARGA_DIBERI
+  local ada_tag=$OPT_TAG_DIBERI
+  local ada_catatan=$OPT_CATATAN_DIBERI
   baru=$lama
 
   # Validasi semua opsi sebelum menyentuh data (urutan sama dengan cmd_tambah).
