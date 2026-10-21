@@ -78,6 +78,14 @@ riwayat, dan `--ulang` mengganti baris hari ini alih-alih menambah baris kedua. 
 terpilih bergantung pada sumber acak — tanpa `MAKAN_APA_SEED`, `pilih` memakai
 `/dev/urandom`.
 
+## Demo 2 menit
+
+Jalankan `make demo` (atau `bash demo/demo-2-menit.sh`) untuk mencetak transkrip
+demo. Skrip memakai direktori `/tmp/makan-apa-demo` (atau `MAKAN_APA_DEMO_DIR`) dan
+tidak menyentuh data pengguna. Sumber acak dikunci (`MAKAN_APA_SEED=11`) dan
+tanggal dipalsukan, sehingga keluarannya sama setiap kali dan sama dengan contoh di
+atas. Simpan dengan `bash demo/demo-2-menit.sh > demo.txt`.
+
 ## Cara kerja riwayat dan filter
 
 Tempat yang dipilih dalam **N hari terakhir** tidak muncul lagi. `N` diambil dari
