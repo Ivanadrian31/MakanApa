@@ -5,7 +5,7 @@ BUILD := build
 DIST := dist
 PKGDIR := $(BUILD)/$(PKG)
 
-.PHONY: all check man deb lint uji-pasang versi bersih
+.PHONY: all check man deb lint uji-pasang versi bersih demo
 
 all: check
 
@@ -56,3 +56,6 @@ uji-pasang: deb
 
 bersih:
 	rm -rf "$(BUILD)" "$(DIST)"
+
+demo:
+	bash demo/demo-2-menit.sh
