@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1] - 2026-10-21
+
+### Diperbaiki
+- Contoh di README dan man page yang gagal dijalankan setelah `init` karena nama
+  contohnya sudah ada di data contoh.
+- Ditambahkan catatan keterbatasan soal independensi review silang.
+
 ## [0.1.0] - 2026-10-20
 
 ### Ditambahkan

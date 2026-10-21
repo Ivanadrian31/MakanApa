@@ -5,7 +5,7 @@ Pemilih tempat makan dengan riwayat dan filter, untuk terminal.
 ## Pasang
 
 ```bash
-sudo apt install ./makan-apa_0.1.0_all.deb
+sudo apt install ./makan-apa_0.1.1_all.deb
 makan-apa init
 makan-apa pilih
 ```
@@ -14,7 +14,7 @@ makan-apa pilih
 
 ```bash
 makan-apa init
-makan-apa tambah "Nasi Goreng Spesial" --harga 15rb-25rb --tag nasi
+makan-apa tambah "Soto Betawi" --harga 18rb-28rb --tag soto
 makan-apa pilih
 makan-apa pilih --budget 20rb --tag nasi,mie
 makan-apa riwayat --hari 7
@@ -140,10 +140,13 @@ Mencopot paket tidak menghapus data pengguna.
 
 - Tidak ada filter jarak atau area; alat bekerja offline tanpa sumber koordinat.
 - Nama non-ASCII dapat menggeser kolom tabel karena program berjalan dengan `LC_ALL=C`.
-- Versi 0.1.0 tidak menyediakan impor/ekspor format selain TSV.
+- Versi 0.1.1 tidak menyediakan impor/ekspor format selain TSV.
 - Baris komentar pada `tempat.tsv` dikumpulkan ulang di atas berkas setiap kali daftar
   ditulis ulang (oleh `tambah`, `ubah`, `hapus`, atau `impor`), jadi posisinya di tengah
   berkas tidak dipertahankan.
+- Pengembangan dan review silang proyek ini dikerjakan oleh agen AI yang dijalankan oleh
+  orang yang sama. Independensi review karena itu hanya pada tingkat akun, bukan tingkat
+  penilaian: cacat yang dipahami atau diabaikan kedua agen dapat lolos tanpa terdeteksi.
 
 ## Lisensi
 

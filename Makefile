@@ -1,4 +1,4 @@
-VERSION := 0.1.0
+VERSION := 0.1.1
 SHELL := /bin/bash
 PKG := makan-apa_$(VERSION)_all
 BUILD := build

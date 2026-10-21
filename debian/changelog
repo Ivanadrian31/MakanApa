@@ -1,3 +1,10 @@
+makan-apa (0.1.1) unstable; urgency=medium
+
+  * Perbaikan contoh di README dan man page yang bentrok dengan data contoh.
+  * Ditambahkan catatan keterbatasan soal review silang dengan agen AI.
+
+ -- Tim MakanApa <tim.makanapa@example.com>  Wed, 21 Oct 2026 12:00:00 +0700
+
 makan-apa (0.1.0) unstable; urgency=medium
 
   * Rilis pertama.

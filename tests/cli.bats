@@ -12,7 +12,7 @@ load helper
 @test "--version mencetak versi kontrak" {
   run makan-apa --version
   [ "$status" -eq 0 ]
-  [ "$output" = "makan-apa 0.1.0" ]
+  [ "$output" = "makan-apa 0.1.1" ]
 }
 
 @test "perintah tidak dikenal keluar 1 dengan saran help" {
@@ -68,4 +68,36 @@ load helper
   run bash -c 'makan-apa impor 2>&1 >/dev/null'
   [ "$status" -eq 1 ]
   [[ $output == *'membutuhkan BERKAS'* ]]
+}
+
+# Contoh di README harus bisa dijalankan apa adanya. Perintah diambil dari
+# README, bukan disalin, supaya contoh dan implementasi tidak bisa berbeda
+# diam-diam. A9: contoh "tambah" yang memakai nama yang sudah ada di data
+# contoh membuat baris kedua README gagal setelah init.
+@test "lima perintah README berjalan tanpa galat" {
+  readme="$BATS_TEST_DIRNAME/../README.md"
+  perintah=$(awk '
+    /^## Pakai dalam 5 baris$/ { bagian = 1; next }
+    bagian && /^```bash$/ { blok = 1; next }
+    blok && /^```$/ { exit }
+    blok { print }
+  ' "$readme")
+
+  [ "$(printf '%s\n' "$perintah" | grep -c .)" -eq 5 ]
+
+  # init gagal bila tempat.tsv sudah ada, jadi tes ini memakai direktori data
+  # sendiri, bukan MAKAN_APA_DATA_DIR milik helper.
+  data_baru=$(mktemp -d "${BATS_TMPDIR:-/tmp}/makan-apa-readme-XXXXXX")
+  export MAKAN_APA_DATA_DIR="$data_baru"
+  export MAKAN_APA_CONFIG_DIR="$data_baru/config"
+
+  while IFS= read -r baris; do
+    [ -n "$baris" ] || continue
+    run bash -c "$baris"
+    if [ "$status" -ne 0 ]; then
+      echo "perintah README gagal (exit $status): $baris" >&2
+      echo "$output" >&2
+      return 1
+    fi
+  done <<< "$perintah"
 }
