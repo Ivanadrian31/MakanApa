@@ -87,9 +87,9 @@ done
 cek "isi contoh terpasang" test -f "/usr/share/makan-apa/contoh.tsv"
 cek "versi sesuai nama paket" test "$(makan-apa --version)" = "makan-apa $VERSI"
 
-# Perintah belum ada di build ini dijawab "belum tersedia" (kontrak P5). Keadaan itu
-# boleh sampai A6, jadi demo dilewati untuk perintah itu saja; galat lain tetap
-# menggagalkan tes.
+# P5 selesai di A6: tidak ada lagi perintah yang dijawab "belum tersedia di
+# build ini". Jadi semua delapan perintah harus benar-benar berfungsi di paket
+# yang terpasang; galat apa pun (bukan hanya kode 3) menggagalkan tes.
 demo() {
     local perintah=$1 galat kod
     shift
@@ -98,10 +98,6 @@ demo() {
         return 0
     else
         kod=$?
-        if [ "$kod" -eq 3 ] && [[ $galat == *"belum tersedia di build ini"* ]]; then
-            printf '  demo %s dilewati: perintah belum tersedia di build ini\n' "$perintah"
-            return 0
-        fi
         printf '%s\n' "$galat" >&2
         return "$kod"
     fi
@@ -109,15 +105,15 @@ demo() {
 
 export MAKAN_APA_DATA_DIR=/tmp/data MAKAN_APA_TANGGAL=2026-10-20
 mkdir -p "$MAKAN_APA_DATA_DIR"
+printf 'Kafe Uji Pasang\t12000\t18000\tkafe\tdingin\n' >/tmp/impor-uji.tsv
 demo init
+demo tambah "Tempat Uji Pasang" --harga 15000 --tag uji
+demo daftar
+demo ubah "Tempat Uji Pasang" --harga 16000
+demo hapus "Tempat Uji Pasang"
 demo pilih --budget 20rb
 demo riwayat --hari 3
-if [ ! -f "$MAKAN_APA_DATA_DIR/tempat.tsv" ]; then
-    # init belum tersedia; buat data pengguna sendiri supaya pemeriksaan "data
-    # tetap setelah remove/purge" tetap teruji.
-    printf 'Bakso Sapi Campur\t14000\t24000\tbakso,berkuah\tporsi jumbo\n' \
-        >"$MAKAN_APA_DATA_DIR/tempat.tsv"
-fi
+demo impor /tmp/impor-uji.tsv
 chmod 700 "$MAKAN_APA_DATA_DIR"
 cek "data pengguna ada sebelum remove" test -f "$MAKAN_APA_DATA_DIR/tempat.tsv"
 
