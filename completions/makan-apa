@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# bash completion untuk makan-apa 0.1.0
+# bash completion untuk makan-apa 0.1.1
 # Terpasang di /usr/share/bash-completion/completions/makan-apa
 
 _makan_apa() {

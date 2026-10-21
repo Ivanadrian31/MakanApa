@@ -7,7 +7,7 @@ umask 077
 IFS=$'\n\t'
 export LC_ALL=C
 
-VERSI="0.1.0"
+VERSI="0.1.1"
 ZONA="Asia/Jakarta"
 
 if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 2))); then
