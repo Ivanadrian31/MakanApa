@@ -156,6 +156,22 @@ tidak mengubah perilaku perintah yang ada. Dampak: `set_opsi` di `bin/makan-apa`
 `--harga`, `--catatan`, `--nama-baru`. Opsi bendera (`--ketat`, `--dry-run`, …) tidak perlu
 penanda karena sudah `0`/`1`.
 
+**P14 — P5 selesai di A6: penjaga `declare -F` dan pesan "belum tersedia" dihapus.**
+Alasan: P5 mengizinkan keadaan "perintah belum tersedia" hanya sampai A6. Setelah B4 (#16)
+masuk, kedelapan perintah ada, sehingga penjaga itu tidak lagi berfungsi. Dampak: (a) baris
+`perintah belum ada (P5, sementara)` di bagian 5.3 **dihapus**; (b) perintah tak dikenal
+tetap keluar 1 dengan galat yang sama seperti sebelumnya; (c) `tests/pasang-bersih.sh`
+tidak lagi melewati perintah apa pun — galat apa pun menggagalkan tes. Urutan merge wajib:
+#16 → A6 → PR kontrak ini.
+
+**P15 — Pengecualian kepemilikan sementara.**
+Alasan: B4 dan B6 belum selesai dari sisi B; A mengambil alih sebagian berkas agar jalur
+rilis tidak macet. Berkas yang boleh ditulis A selama pengecualian: `lib/cmd-ubah.sh`,
+`tests/ubah.bats` (B4); `tests/pasang-bersih.sh`, `README.md`, `Makefile` (target `demo`),
+`demo/demo-2-menit.sh` (B6). Dampak: (a) setiap PR ambil-alih menyebut pengecualian ini di
+deskripsinya; (b) kepemilikan berkas kembali ke B setelah B aktif; (c) hak admin repo
+(proteksi branch, tag, GitHub Release, undangan kolaborator) tidak dialihkan.
+
 ### 2.2 Klarifikasi aditif (menutup celah; wajib disetujui di PR kontrak pertama)
 
 `PLAN.md` tidak menentukan hal-hal berikut. Tanpa keputusan, dua implementasi akan berbeda
@@ -205,6 +221,7 @@ lib/cmd-pilih.sh              A
 lib/cmd-ubah.sh               B
 lib/cmd-impor.sh              B
 lib/cmd-riwayat.sh            B
+demo/demo-2-menit.sh          B   (ditambahkan P15 untuk B6; pemilik tetap B)
 man/makan-apa.1               B
 completions/makan-apa         B
 data/contoh.tsv               A
@@ -323,7 +340,6 @@ Kode keluar: 0 sukses, 1 pemakaian, 2 tidak ada kandidat,
 |impor tidak valid|`makan-apa: berkas impor tidak valid pada baris 3, 7. Tidak ada data yang diubah.` (maks 5 nomor)|3|
 |semua baris tempat rusak|`makan-apa: data tempat rusak: tidak ada baris valid di <path>.`|3|
 |pustaka hilang (K11)|`makan-apa: pustaka tidak ditemukan. Paket rusak; pasang ulang.`|3|
-|perintah belum ada (P5, sementara)|`makan-apa: perintah "<nama>" belum tersedia di build ini.`|3|
 
 Peringatan (stderr, tidak mengubah kode keluar):
 
