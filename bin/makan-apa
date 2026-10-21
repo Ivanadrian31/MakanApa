@@ -50,6 +50,13 @@ OPT_HARI=""
 OPT_HARGA=""
 OPT_CATATAN=""
 OPT_NAMA_BARU=""
+# Penanda "opsi diberikan" (P13): membedakan "--catatan ''" dari "tanpa --catatan".
+OPT_BUDGET_DIBERI=0
+OPT_TAG_DIBERI=0
+OPT_HARI_DIBERI=0
+OPT_HARGA_DIBERI=0
+OPT_CATATAN_DIBERI=0
+OPT_NAMA_BARU_DIBERI=0
 OPT_DRY_RUN=0
 OPT_ULANG=0
 OPT_TSV=0
@@ -167,6 +174,8 @@ set_opsi() { # $1=--nama $2=nilai
   var=${var^^}
   var=${var//-/_}
   printf -v "OPT_$var" '%s' "$2"
+  # Penanda kehadiran opsi (P13): "diberikan dengan nilai kosong" != "tidak diberikan".
+  printf -v "OPT_${var}_DIBERI" '%s' 1
 }
 
 parse_opsi() {
