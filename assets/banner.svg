@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" width="1200" height="640" role="img" aria-labelledby="ma-title ma-desc">
+  <title id="ma-title">makan-apa — pemilih tempat makan dengan riwayat dan filter</title>
+  <desc id="ma-desc">Banner: logo makan-apa di atas jendela terminal. Kiri menunjukkan keluaran asli perintah pilih dengan hitungan kandidat, kanan menunjukkan delapan tempat contoh beserta harganya.</desc>
+
+  <defs>
+    <linearGradient id="ma-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12161c"/>
+      <stop offset="1" stop-color="#0a0d11"/>
+    </linearGradient>
+    <linearGradient id="ma-accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f2a03d"/>
+      <stop offset="1" stop-color="#e2603f"/>
+    </linearGradient>
+    <filter id="ma-soft" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="16" stdDeviation="28" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <filter id="ma-glow" x="-45%" y="-45%" width="190%" height="190%">
+      <feGaussianBlur stdDeviation="95"/>
+    </filter>
+    <clipPath id="ma-clip">
+      <rect x="44" y="228" width="1112" height="384" rx="12"/>
+    </clipPath>
+    <style>
+      .mono { font-family: "SFMono-Regular", "JetBrains Mono", "Cascadia Mono", Consolas, "Liberation Mono", Menlo, monospace; }
+      .title { font-family: "SFMono-Regular", "JetBrains Mono", "Cascadia Mono", Consolas, "Liberation Mono", Menlo, monospace; font-size: 54px; font-weight: 700; letter-spacing: -1px; fill: #f5f2ec; }
+      .lead { font-family: "SFMono-Regular", "JetBrains Mono", "Cascadia Mono", Consolas, "Liberation Mono", Menlo, monospace; font-size: 18px; font-weight: 400; fill: #9aa5b1; }
+      .term { font-size: 15px; fill: #ccd5de; }
+      .term-dim { font-size: 15px; fill: #78848f; }
+      .term-hi { font-size: 15px; fill: #f2a03d; font-weight: 600; }
+      .term-ok { font-size: 15px; fill: #6fbf8b; }
+      .prompt { font-size: 15px; fill: #6fbf8b; }
+      .dot { fill: #39424c; }
+      .pane-h { font-size: 11px; letter-spacing: 2.2px; fill: #7d8894; }
+      .row-name { font-size: 14px; font-weight: 600; fill: #ece8e0; }
+      .row-price { font-size: 13.5px; fill: #f2a03d; }
+      .chip-t { font-size: 11px; letter-spacing: 1.6px; fill: #97a3b0; }
+      .chip-b { fill: #161c23; stroke: #262f39; stroke-width: 1; }
+      .rule { stroke: #20272f; stroke-width: 1; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="640" fill="url(#ma-bg)"/>
+
+  <!-- ambient light: heavily blurred, no hard edge -->
+  <ellipse cx="1020" cy="20" rx="380" ry="200" fill="#e2603f" opacity="0.13" filter="url(#ma-glow)"/>
+  <ellipse cx="80" cy="620" rx="330" ry="170" fill="#f2a03d" opacity="0.09" filter="url(#ma-glow)"/>
+
+  <!-- wordmark -->
+  <text class="mono title" x="72" y="92">makan-apa</text>
+  <rect x="72" y="114" width="136" height="3" rx="1.5" fill="url(#ma-accent)"/>
+  <text class="mono lead" x="72" y="152">Pemilih tempat makan dengan riwayat dan filter — untuk terminal.</text>
+
+  <!-- fact chips -->
+  <g>
+    <rect class="chip-b" x="72" y="174" width="140" height="26" rx="13"/>
+    <text class="mono chip-t" x="142" y="191" text-anchor="middle">DELAPAN PERINTAH</text>
+  </g>
+  <g>
+    <rect class="chip-b" x="224" y="174" width="104" height="26" rx="13"/>
+    <text class="mono chip-t" x="276" y="191" text-anchor="middle">DUA FILTER</text>
+  </g>
+  <g>
+    <rect class="chip-b" x="340" y="174" width="246" height="26" rx="13"/>
+    <text class="mono chip-t" x="463" y="191" text-anchor="middle">TANPA DEPENDENSI PIHAK KETIGA</text>
+  </g>
+
+  <!-- terminal window -->
+  <g filter="url(#ma-soft)">
+    <rect x="44" y="228" width="1112" height="384" rx="12" fill="#0d1116"/>
+  </g>
+  <g clip-path="url(#ma-clip)">
+    <rect x="44" y="228" width="1112" height="384" fill="#0d1116"/>
+
+    <!-- title bar -->
+    <rect x="44" y="228" width="1112" height="38" fill="#151a21"/>
+    <line class="rule" x1="44" y1="266" x2="1156" y2="266"/>
+    <circle class="dot" cx="70" cy="247" r="5"/>
+    <circle class="dot" cx="88" cy="247" r="5"/>
+    <circle class="dot" cx="106" cy="247" r="5"/>
+    <text class="mono term-dim" x="600" y="252" text-anchor="middle">makan-apa — bash 4.2+</text>
+
+    <!-- LEFT: real output of `makan-apa pilih` -->
+    <text class="mono prompt" x="80" y="308">$</text>
+    <text class="mono term-hi" x="98" y="308">makan-apa pilih</text>
+
+    <text class="mono term" x="98" y="338">Bakso Sapi Campur</text>
+    <text class="mono term-dim" x="98" y="362">  Rp14.000-24.000</text>
+    <text class="mono term-ok" x="236" y="362">[bakso,berkuah]</text>
+    <text class="mono term-dim" x="98" y="386">  Catatan: porsi jumbo</text>
+    <text class="mono term" x="98" y="410">  Kandidat: 8 dari 8</text>
+    <text class="mono term-dim" x="98" y="434">  (tersaring: budget 0, tag 0, riwayat 0)</text>
+    <text class="mono term-ok" x="98" y="458">  Tercatat di riwayat: 2026-10-20</text>
+
+    <line class="rule" x1="80" y1="486" x2="640" y2="486"/>
+
+    <text class="mono prompt" x="80" y="516">$</text>
+    <text class="mono term-hi" x="98" y="516">makan-apa pilih --budget 20rb --tag nasi,mie</text>
+
+    <text class="mono term" x="98" y="546">Mie Ayam Pangsit</text>
+    <text class="mono term-dim" x="98" y="570">  Rp12.000-20.000</text>
+    <text class="mono term-ok" x="236" y="570">[mie]</text>
+    <text class="mono term-dim" x="98" y="594">  Catatan: kuah kaldu ayam</text>
+
+    <!-- RIGHT: the eight sample places, real names and real prices -->
+    <line class="rule" x1="680" y1="288" x2="680" y2="592"/>
+
+    <text class="mono pane-h" x="716" y="308">DELAPAN TEMPAT CONTOH</text>
+
+    <g>
+      <text class="mono row-name" x="716" y="342">Ayam Geprek Dada</text>
+      <text class="mono row-price" x="1010" y="342">Rp13.000-22.000</text>
+    </g>
+    <g>
+      <text class="mono row-name" x="716" y="374">Bakso Sapi Campur</text>
+      <text class="mono row-price" x="1010" y="374">Rp14.000-24.000</text>
+    </g>
+    <g>
+      <text class="mono row-name" x="716" y="406">Es Teh Manis</text>
+      <text class="mono row-price" x="1010" y="406">Rp4.000-8.000</text>
+    </g>
+    <g>
+      <text class="mono row-name" x="716" y="438">Kopi Susu Gula Aren</text>
+      <text class="mono row-price" x="1010" y="438">Rp10.000-18.000</text>
+    </g>
+    <g>
+      <text class="mono row-name" x="716" y="470">Mie Ayam Pangsit</text>
+      <text class="mono row-price" x="1010" y="470">Rp12.000-20.000</text>
+    </g>
+    <g>
+      <text class="mono row-name" x="716" y="502">Nasi Goreng Spesial</text>
+      <text class="mono row-price" x="1010" y="502">Rp15.000-25.000</text>
+    </g>
+    <g>
+      <text class="mono row-name" x="716" y="534">Nasi Uduk Komplit</text>
+      <text class="mono row-price" x="1010" y="534">Rp12.000-20.000</text>
+    </g>
+    <g>
+      <text class="mono row-name" x="716" y="566">Sate Ayam 10 Tusuk</text>
+      <text class="mono row-price" x="1010" y="566">Rp20.000-30.000</text>
+    </g>
+  </g>
+</svg>
