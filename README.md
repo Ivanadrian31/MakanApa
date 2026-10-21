@@ -22,7 +22,7 @@ makan-apa riwayat --hari 7
 
 ## Contoh keluaran
 
-Transkrip asli `PLAN.md` §1, direkam dari `main` dengan data contoh delapan tempat. Tanggal
+Transkrip asli, direkam dari `main` dengan data contoh delapan tempat. Tanggal
 dipalsukan lewat `MAKAN_APA_TANGGAL` dan sumber acak dikunci lewat `MAKAN_APA_SEED=11`, jadi
 seluruh baris di bawah dapat diulang persis:
 
