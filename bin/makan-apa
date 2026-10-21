@@ -242,11 +242,8 @@ main() {
     usage >&2
     return 1
   fi
-  if ! declare -F "cmd_$PERINTAH" >/dev/null; then
-    perintah_dikenal "$PERINTAH" ||
-      die_opsi "perintah \"$PERINTAH\" tidak dikenal."
-    die "perintah \"$PERINTAH\" belum tersedia di build ini." 3
-  fi
+  perintah_dikenal "$PERINTAH" ||
+    die_opsi "perintah \"$PERINTAH\" tidak dikenal."
   "cmd_$PERINTAH" ${ARG_POS[@]+"${ARG_POS[@]}"}
 }
 
