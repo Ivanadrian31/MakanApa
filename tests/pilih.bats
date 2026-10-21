@@ -261,7 +261,7 @@ Jalankan 'makan-apa init' untuk data contoh atau 'makan-apa tambah NAMA --harga 
   [ "$output" = "2" ]
 }
 
-@test "entri lebih tua dari 90 hari dipangkas saat menulis" {
+@test "pilih memangkas entri riwayat lebih tua dari 90 hari" {
   mkdir -p "$MAKAN_APA_DATA_DIR"
   printf 'A\t10000\t20000\tnasi\tx\n' >"$MAKAN_APA_DATA_DIR/tempat.tsv"
   # 2026-07-22 = 90 hari sebelum 2026-10-20; 2026-07-21 = 91 hari (dipangkas).
